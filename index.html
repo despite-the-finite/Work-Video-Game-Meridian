@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>EPC QUEST</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #14161c;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+  }
+  #game-container {
+    box-shadow: 0 0 0 4px #2a2d3a, 0 0 40px rgba(0,0,0,0.6);
+  }
+</style>
+</head>
+<body>
+<div id="game-container"></div>
+
+<!-- Phaser via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+<!-- Game data -->
+<script src="src/data/ranks.js"></script>
+<script src="src/data/bonus.js"></script>
+<script src="src/data/coworkers.js"></script>
+<script src="src/data/enemies.js"></script>
+<script src="src/data/bosses.js"></script>
+<script src="src/data/clients.js"></script>
+<script src="src/data/site_hazards.js"></script>
+<script src="src/data/floorplan.js"></script>
+<script src="src/data/sitevisits.js"></script>
+<script src="src/data/visitors.js"></script>
+
+<!-- Game scenes -->
+<script src="src/scenes/BootScene.js"></script>
+<script src="src/scenes/OfficeScene.js"></script>
+<script src="src/scenes/SiteVisitScene.js"></script>
+<script src="src/scenes/VisitorScene.js"></script>
+<script src="src/scenes/BattleScene.js"></script>
+
+<!-- Entry point -->
+<script src="src/main.js"></script>
+</body>
+</html>
