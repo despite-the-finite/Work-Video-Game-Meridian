@@ -32,7 +32,15 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, OfficeScene, BattleScene],
+  scene: [
+    TitleScene,
+    IntroScene,
+    BootScene,
+    OfficeScene,
+    SiteVisitScene,
+    VisitorScene,
+    BattleScene,
+  ],
 };
 
-new Phaser.Game(config);
+window.game = new Phaser.Game(config);

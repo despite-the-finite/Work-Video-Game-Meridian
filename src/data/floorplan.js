@@ -31,8 +31,8 @@ const FLOORPLAN = {
     "122002200220022002200004444440000000000044444400000220022002200220022001",
     "100000000000000000000000000000000000000000000000000000000000000000000001",
     "122002200220022002200111111111111166611111111111111220022002200220022001",
-    "122002200220022002200100011666666666666666666110001220022002200220022001",
-    "100000000000000000000100011666226666666666666110001000000000000000000001",
+    "122002200220022002200100011666666666666666666660001220022002200220022001",
+    "100000000000000000000100011666226666666666666660001000000000000000000001",
     "122002200220022002200002001666666666666666666100200220022002200220022001",
     "122002200220022002200100011666666666666226666110001220022002200220022001",
     "100000000000000000000100011666666666666666666110001000000000000000000001",
@@ -93,21 +93,25 @@ const FLOORPLAN = {
     { x: 49, y: 17, coworkerId: "marisol_fenwick" },
   ],
 
-  // Portals to other scenes — walk up and interact to travel there.
-  portals: [
-    {
-      x: 38,
-      y: 9,
-      label: "SITE VISIT:\nMERIDIAN PH.2",
-      sceneKey: "SiteVisitScene",
-      payload: { siteId: "meridian_phase2" },
-    },
-    {
-      x: 41,
-      y: 9,
-      label: "VISITOR DAY",
-      sceneKey: "VisitorScene",
-      payload: {},
-    },
-  ],
+  // Home base — the player's own cubicle, and the single hub for every
+  // mode (office / site visit / visitor day). Sits on the west exterior
+  // wall (the main east-west corridor dead-ends there, so it can't pinch
+  // any through-route) rather than the central plaza, which wedged it
+  // between the STAIRS/PRINT-COPY/RESTROOMS landmark blocks and choked
+  // that walkway.
+  homeBase: {
+    x: 1,
+    y: 9,
+    label: "YOUR CUBICLE",
+    options: [
+      { label: "Work the Office Floor", action: "close" },
+      {
+        label: "Site Visit: Meridian Ph.2",
+        action: "travel",
+        sceneKey: "SiteVisitScene",
+        payload: { siteId: "meridian_phase2" },
+      },
+      { label: "Visitor Day", action: "travel", sceneKey: "VisitorScene", payload: {} },
+    ],
+  },
 };

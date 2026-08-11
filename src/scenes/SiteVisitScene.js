@@ -80,7 +80,6 @@ class SiteVisitScene extends Phaser.Scene {
     this.player.body.setSize(T * 0.6, T * 0.4);
     this.player.body.setOffset(T * 0.075, T * 0.55);
     this.physics.add.collider(this.player, this.solids);
-    this.lastTileKey = null;
 
     // Checkpoint state — restore if resuming from a hazard fight
     this.resolved = { safety: false, schedule: false, quality: false };
@@ -132,6 +131,12 @@ class SiteVisitScene extends Phaser.Scene {
       this.player.setPosition(p.x, p.y);
       this.registry.remove("siteReturnPos");
     }
+
+    // Prime encounter tracking from wherever the player actually ended up
+    // so landing back on a hazard tile doesn't immediately re-roll another fight.
+    const startKey = `${Math.floor(this.player.x / T)},${Math.floor(this.player.y / T)}`;
+    this.lastTileKey = startKey;
+    this.inEncounterZone = this.encounterTiles.has(startKey);
 
     // Camera / world bounds
     const worldW = this.site.width * T;
@@ -342,6 +347,9 @@ class SiteVisitScene extends Phaser.Scene {
     this.scene.start("OfficeScene");
   }
 
+  // Rolls only on the step that crosses INTO a hazard zone from outside
+  // it, not on every tile crossed while still inside — see OfficeScene's
+  // checkEncounterTile for why.
   checkEncounterTile() {
     const T = this.tileSize;
     const tx = Math.floor(this.player.x / T);
@@ -350,11 +358,11 @@ class SiteVisitScene extends Phaser.Scene {
     if (key === this.lastTileKey) return;
     this.lastTileKey = key;
 
-    if (this.encounterTiles.has(key)) {
-      if (Phaser.Math.Between(1, 100) <= 20) {
-        this.triggerEncounter();
-      }
+    const onEncounterTile = this.encounterTiles.has(key);
+    if (onEncounterTile && !this.inEncounterZone && Phaser.Math.Between(1, 100) <= 20) {
+      this.triggerEncounter();
     }
+    this.inEncounterZone = onEncounterTile;
   }
 
   triggerEncounter() {

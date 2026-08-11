@@ -18,11 +18,12 @@ class BootScene extends Phaser.Scene {
     this.generateEncounterTexture(T);
     this.generateBreakRoomTexture(T);
     this.generateLandmarkTexture(T);
-    this.generateActorTexture("player", T, 0x4a90d9, 0xdff0ff);
-    this.generateActorTexture("npc_default", T, 0x8a6d3b, 0xf0e0c0);
+    this.generateCubicleTexture(T);
+    this.generateActorTexture("player", T, 0x4a90d9);
+    this.generateActorTexture("npc_default", T, 0x8a6d3b);
     Object.keys(COWORKERS).forEach((id) => {
       const cw = COWORKERS[id];
-      this.generateActorTexture(`npc_${id}`, T, cw.portraitColor || 0x8a6d3b, 0xf0e0c0);
+      this.generateActorTexture(`npc_${id}`, T, cw.portraitColor || 0x8a6d3b);
     });
 
     // Site visit textures
@@ -37,8 +38,7 @@ class BootScene extends Phaser.Scene {
         this.generateActorTexture(
           `checkpoint_${siteKey}_${cp.id}`,
           T,
-          cp.portraitColor || 0x8a6d3b,
-          0xf0e0c0
+          cp.portraitColor || 0x8a6d3b
         );
       });
     });
@@ -46,7 +46,7 @@ class BootScene extends Phaser.Scene {
     // Visitor Day textures
     this.generateFoodTruckTexture(T);
     VISITORS.forEach((v) => {
-      this.generateActorTexture(`visitor_${v.id}`, T, v.portraitColor || 0x8a6d3b, 0xf0e0c0);
+      this.generateActorTexture(`visitor_${v.id}`, T, v.portraitColor || 0x8a6d3b, "casual");
     });
 
     this.scene.start("OfficeScene");
@@ -133,6 +133,25 @@ class BootScene extends Phaser.Scene {
     g.lineStyle(1, 0x4a5580, 1);
     g.strokeRect(1, 1, T - 2, T - 2);
     g.generateTexture("tile_landmark", T, T);
+    g.destroy();
+  }
+
+  generateCubicleTexture(T) {
+    // Same desk footprint as tile_desk, but with a pale "window" pane
+    // instead of a monitor, so the player's home base reads differently
+    // from generic desk pods at a glance.
+    const g = this.add.graphics();
+    g.fillStyle(0xc9c2a6, 1);
+    g.fillRect(0, 0, T, T);
+    g.fillStyle(0x6b4a2f, 1);
+    g.fillRect(2, 10, T - 4, T - 14);
+    g.fillStyle(0x4a90d9, 1);
+    g.fillRect(4, 2, T - 8, 10);
+    g.fillStyle(0xdff0ff, 0.85);
+    g.fillRect(6, 4, T - 12, 6);
+    g.lineStyle(2, 0xffe9a8, 1);
+    g.strokeRect(1, 1, T - 2, T - 2);
+    g.generateTexture("tile_cubicle", T, T);
     g.destroy();
   }
 
@@ -229,20 +248,113 @@ class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  generateActorTexture(key, T, bodyColor, headColor) {
+  // Wardrobe: everyone defaults to business casual (collared shirt, tie or
+  // blazer trim, slacks). Pass attire "casual" for Visitor Day guests
+  // (crew-neck tee, jeans/shorts, no tie). Skin tone, hair, and every trim
+  // choice are picked deterministically off the texture key (a cheap
+  // string hash, reused with different moduli so the picks don't all
+  // correlate) so the office floor reads as a crowd of individuals rather
+  // than repeated palette-swapped blobs, while staying stable across
+  // reloads since nothing here is Math.random().
+  generateActorTexture(key, T, bodyColor, attire = "business") {
     const w = Math.floor(T * 0.75);
     const h = T;
     const g = this.add.graphics();
+    const hash = key.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+
+    const bodyX = w * 0.15;
+    const bodyY = h * 0.4;
+    const bodyW = w * 0.7;
+    const bodyH = h * 0.5;
+
+    const headCx = w / 2;
+    const headCy = h * 0.28;
+    const headR = w * 0.32;
+
+    const SKIN_TONES = [0xf0e0c0, 0xd9b88a, 0xb5875a, 0x8a5a35, 0x6b4423];
+    const HAIR_COLORS = [0x1a1a1a, 0x3a2a1a, 0x6b4423, 0x8a6a3a, 0xd9c27a, 0x9a9a9a];
+    const skin = SKIN_TONES[hash % SKIN_TONES.length];
+    const hairColor = HAIR_COLORS[(hash * 7 + 3) % HAIR_COLORS.length];
+    const hairRoll = (hash * 13) % 6; // 0 = bald, else picks a style below
+
     // shadow
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(w / 2, h - 4, w * 0.7, 6);
-    // body
+
+    // body (shirt/blouse/tee)
     g.fillStyle(bodyColor, 1);
-    g.fillRoundedRect(w * 0.15, h * 0.4, w * 0.7, h * 0.5, 4);
+    g.fillRoundedRect(bodyX, bodyY, bodyW, bodyH, 4);
+
+    if (attire === "casual") {
+      const BOTTOMS = [0x4a6a9a, 0xc9b380, 0x5a5a5a][hash % 3];
+      g.fillStyle(BOTTOMS, 1);
+      g.fillRect(bodyX, bodyY + bodyH * 0.68, bodyW, bodyH * 0.32);
+      // crew neckline
+      g.fillStyle(skin, 1);
+      g.fillCircle(w / 2, bodyY + 1, bodyW * 0.12);
+      // occasional tee graphic/stripe
+      if (hash % 2 === 0) {
+        g.fillStyle(0xffffff, 0.35);
+        g.fillRect(bodyX, bodyY + bodyH * 0.32, bodyW, 2);
+      }
+    } else {
+      const SLACKS = [0x2a3550, 0x3c3c3c, 0xa89968][hash % 3];
+      g.fillStyle(SLACKS, 1);
+      g.fillRect(bodyX, bodyY + bodyH * 0.62, bodyW, bodyH * 0.38);
+      // open collar
+      g.fillStyle(0xf2ede0, 1);
+      g.fillTriangle(
+        w / 2, bodyY + bodyH * 0.05,
+        bodyX + bodyW * 0.32, bodyY,
+        bodyX + bodyW * 0.68, bodyY
+      );
+      if (hash % 2 === 0) {
+        // necktie
+        g.fillStyle(this.darken(bodyColor, 0.5), 1);
+        g.fillRect(w / 2 - 1.5, bodyY, 3, bodyH * 0.4);
+      } else {
+        // blazer edge
+        g.lineStyle(1.5, this.darken(bodyColor, 0.65), 1);
+        g.strokeRoundedRect(bodyX, bodyY, bodyW, bodyH, 4);
+      }
+    }
+
     // head
-    g.fillStyle(headColor, 1);
-    g.fillCircle(w / 2, h * 0.28, w * 0.32);
+    g.fillStyle(skin, 1);
+    g.fillCircle(headCx, headCy, headR);
+
+    // hair — drawn short enough to always clear the eyeline below, so the
+    // face stays visible regardless of which style lands.
+    if (hairRoll !== 0) {
+      g.fillStyle(hairColor, 1);
+      if (hairRoll <= 2) {
+        // short crop
+        g.fillEllipse(headCx, headCy - headR * 0.45, headR * 1.7, headR * 1.05);
+      } else if (hairRoll <= 4) {
+        // side part
+        g.fillEllipse(headCx - headR * 0.15, headCy - headR * 0.4, headR * 1.9, headR * 1.1);
+      } else {
+        // fuller, framing the face
+        g.fillEllipse(headCx, headCy - headR * 0.35, headR * 2.05, headR * 1.2);
+      }
+    }
+
+    // face — two small eyes, positioned below the hairline
+    const eyeY = headCy + headR * 0.35;
+    const eyeDX = headR * 0.35;
+    const eyeR = Math.max(1, headR * 0.16);
+    g.fillStyle(0x2a2320, 1);
+    g.fillCircle(headCx - eyeDX, eyeY, eyeR);
+    g.fillCircle(headCx + eyeDX, eyeY, eyeR);
+
     g.generateTexture(key, w, h);
     g.destroy();
+  }
+
+  darken(color, factor) {
+    const r = Math.floor(((color >> 16) & 0xff) * factor);
+    const gr = Math.floor(((color >> 8) & 0xff) * factor);
+    const b = Math.floor((color & 0xff) * factor);
+    return (r << 16) | (gr << 8) | b;
   }
 }

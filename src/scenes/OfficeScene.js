@@ -87,7 +87,6 @@ class OfficeScene extends Phaser.Scene {
     this.player.body.setSize(T * 0.6, T * 0.4);
     this.player.body.setOffset(T * 0.075, T * 0.55);
     this.physics.add.collider(this.player, this.solids);
-    this.lastTileKey = null;
 
     // NPCs
     this.npcGroup = this.physics.add.staticGroup();
@@ -112,25 +111,24 @@ class OfficeScene extends Phaser.Scene {
     });
     this.physics.add.collider(this.player, this.npcGroup);
 
-    // Portals to other scenes (site visits, visitor day, etc)
-    this.portalGroup = this.physics.add.staticGroup();
-    this.portalData = [];
-    (FLOORPLAN.portals || []).forEach((def) => {
-      const px = def.x * T + T / 2;
-      const py = def.y * T + T / 2;
-      const spr = this.portalGroup.create(px, py, "tile_portal");
-      spr.setSize(T * 0.9, T * 0.7).refreshBody();
-      this.portalData.push({ sprite: spr, def });
-      this.add
-        .text(px, py - T * 0.9, def.label, {
-          fontSize: "9px",
-          fontFamily: "Courier New",
-          color: "#ffb454",
-          align: "center",
-        })
-        .setOrigin(0.5);
-    });
-    this.physics.add.collider(this.player, this.portalGroup);
+    // Home base — the player's own cubicle. Interacting opens the
+    // mode-select menu (office / site visit / visitor day), so it's the
+    // single hub for every mode instead of separate portal tiles.
+    const hb = FLOORPLAN.homeBase;
+    this.homeBaseGroup = this.physics.add.staticGroup();
+    const hbPx = hb.x * T + T / 2;
+    const hbPy = hb.y * T + T / 2;
+    this.homeBaseSprite = this.homeBaseGroup.create(hbPx, hbPy, "tile_cubicle");
+    this.homeBaseSprite.setSize(T, T).refreshBody();
+    this.add
+      .text(hbPx, hbPy - T * 0.9, hb.label, {
+        fontSize: "9px",
+        fontFamily: "Courier New",
+        color: "#ffe9a8",
+        align: "center",
+      })
+      .setOrigin(0.5);
+    this.physics.add.collider(this.player, this.homeBaseGroup);
 
     // Camera / world bounds
     const worldW = FLOORPLAN.width * T;
@@ -155,6 +153,7 @@ class OfficeScene extends Phaser.Scene {
 
     this.buildHud();
     this.buildDialogueBox();
+    this.buildModeMenu();
 
     this.encounterLocked = false;
     this.activeDialogueNpc = null;
@@ -165,6 +164,13 @@ class OfficeScene extends Phaser.Scene {
       this.player.setPosition(p.x, p.y);
       this.registry.remove("returnPos");
     }
+
+    // Prime encounter tracking from wherever the player actually ended up
+    // (fresh spawn or resumed from battle) so landing back on a red tile
+    // doesn't immediately re-roll another fight.
+    const startKey = `${Math.floor(this.player.x / T)},${Math.floor(this.player.y / T)}`;
+    this.lastTileKey = startKey;
+    this.inEncounterZone = this.encounterTiles.has(startKey);
 
     this.refreshHud();
   }
@@ -274,6 +280,61 @@ class OfficeScene extends Phaser.Scene {
     }
   }
 
+  buildModeMenu() {
+    this.modeMenuContainer = this.add.container(0, 0).setScrollFactor(0);
+    const bg = this.add
+      .rectangle(320, 240, 320, 170, 0x14161c, 0.95)
+      .setStrokeStyle(2, 0x4a90d9);
+    const title = this.add
+      .text(320, 180, "YOUR CUBICLE", {
+        fontSize: "13px",
+        fontFamily: "Courier New",
+        color: "#ffe9a8",
+      })
+      .setOrigin(0.5);
+    this.modeMenuCursor = this.add.text(0, 0, ">", {
+      fontSize: "12px",
+      fontFamily: "Courier New",
+      color: "#ffe9a8",
+    });
+    this.modeMenuContainer.add([bg, title, this.modeMenuCursor]);
+    this.modeMenuContainer.setVisible(false);
+    this.modeMenuTexts = [];
+    this.selectedMenuIndex = 0;
+  }
+
+  openModeMenu() {
+    this.selectedMenuIndex = 0;
+    this.modeMenuTexts.forEach((t) => t.destroy());
+    this.modeMenuTexts = FLOORPLAN.homeBase.options.map((opt, i) =>
+      this.add.text(215, 205 + i * 22, opt.label, {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ffffff",
+      })
+    );
+    this.modeMenuTexts.forEach((t) => this.modeMenuContainer.add(t));
+    this.modeMenuContainer.setVisible(true);
+    this.updateModeMenuCursor();
+  }
+
+  updateModeMenuCursor() {
+    const target = this.modeMenuTexts[this.selectedMenuIndex];
+    this.modeMenuCursor.setPosition(target.x - 18, target.y);
+  }
+
+  closeModeMenu() {
+    this.modeMenuContainer.setVisible(false);
+  }
+
+  confirmModeMenu() {
+    const opt = FLOORPLAN.homeBase.options[this.selectedMenuIndex];
+    this.closeModeMenu();
+    if (opt.action === "travel") {
+      this.travelTo(opt.sceneKey, opt.payload);
+    }
+  }
+
   startBossFight(enemyId) {
     this.encounterLocked = true;
     this.player.setVelocity(0, 0);
@@ -295,18 +356,15 @@ class OfficeScene extends Phaser.Scene {
     return null;
   }
 
-  findNearbyPortal() {
+  findNearbyHomeBase() {
     const T = this.tileSize;
-    for (const portal of this.portalData) {
-      const d = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        portal.sprite.x,
-        portal.sprite.y
-      );
-      if (d < T * 1.2) return portal;
-    }
-    return null;
+    const d = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.homeBaseSprite.x,
+      this.homeBaseSprite.y
+    );
+    return d < T * 1.2 ? FLOORPLAN.homeBase : null;
   }
 
   travelTo(sceneKey, payload) {
@@ -319,6 +377,21 @@ class OfficeScene extends Phaser.Scene {
       this.player.setVelocity(0, 0);
       if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
         this.advanceDialogue();
+      }
+      return;
+    }
+
+    if (this.modeMenuContainer.visible) {
+      this.player.setVelocity(0, 0);
+      const optionCount = FLOORPLAN.homeBase.options.length;
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
+        this.selectedMenuIndex = (this.selectedMenuIndex - 1 + optionCount) % optionCount;
+        this.updateModeMenuCursor();
+      } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || Phaser.Input.Keyboard.JustDown(this.wasd.down)) {
+        this.selectedMenuIndex = (this.selectedMenuIndex + 1) % optionCount;
+        this.updateModeMenuCursor();
+      } else if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+        this.confirmModeMenu();
       }
       return;
     }
@@ -343,9 +416,8 @@ class OfficeScene extends Phaser.Scene {
       const npc = this.findNearbyNpc();
       if (npc) {
         this.openDialogue(npc);
-      } else {
-        const portal = this.findNearbyPortal();
-        if (portal) this.travelTo(portal.def.sceneKey, portal.def.payload);
+      } else if (this.findNearbyHomeBase()) {
+        this.openModeMenu();
       }
     }
 
@@ -387,6 +459,10 @@ class OfficeScene extends Phaser.Scene {
     }
   }
 
+  // Rolls only on the step that crosses INTO a red zone from outside it,
+  // not on every tile crossed while still inside — otherwise a multi-tile
+  // zone gets one independent roll per tile and a single walk-through
+  // compounds to a near-certain fight.
   checkEncounterTile() {
     const T = this.tileSize;
     const tx = Math.floor(this.player.x / T);
@@ -395,11 +471,11 @@ class OfficeScene extends Phaser.Scene {
     if (key === this.lastTileKey) return;
     this.lastTileKey = key;
 
-    if (this.encounterTiles.has(key)) {
-      if (Phaser.Math.Between(1, 100) <= 18) {
-        this.triggerEncounter();
-      }
+    const onEncounterTile = this.encounterTiles.has(key);
+    if (onEncounterTile && !this.inEncounterZone && Phaser.Math.Between(1, 100) <= 18) {
+      this.triggerEncounter();
     }
+    this.inEncounterZone = onEncounterTile;
   }
 
   triggerEncounter() {
