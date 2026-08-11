@@ -27,13 +27,15 @@ class IntroScene extends Phaser.Scene {
       "firm that has been designing, procuring, and constructing things " +
       "nobody quite remembers commissioning since long before you started.\n\n" +
       "The title comes with a corner cubicle, a Bonus Potential score of " +
-      "exactly 50, and a Performance Review already on the calendar.\n\n" +
-      "Climbing from Engineering Manager all the way to Executive means " +
-      "keeping that Bonus Potential up everywhere you're evaluated:\n\n" +
-      "THE OFFICE - work coworkers, dodge corporate chaos.\n" +
+      "20, and a Performance Review already on the calendar. Maxing out " +
+      "Bonus Potential queues a promotion — but it only takes effect once " +
+      "you get a change order approved on a site visit.\n\n" +
+      "Everything starts at your cubicle. From there:\n\n" +
+      "THE OFFICE - work coworkers, fight in conference rooms.\n" +
       "SITE VISITS - clear checkpoints, negotiate change orders.\n" +
-      "VISITOR DAY - impress family and vendors for easy points.\n\n" +
-      "Work all three. Maximize your Bonus Potential. Make Executive.";
+      "VISITOR DAY - impress family, vendors, subs, and clients.\n" +
+      "PTO - a weekend with Colleen and Indra, at the cost of Bonus.\n\n" +
+      "Work the floor. Maximize your Bonus Potential. Make Executive.";
 
     this.add
       .text(320, 60, body, {
@@ -44,6 +46,21 @@ class IntroScene extends Phaser.Scene {
         wordWrap: { width: 560 },
         lineSpacing: 4,
       })
+      .setOrigin(0.5, 0);
+
+    this.add
+      .text(
+        320,
+        380,
+        "Controls: Arrows/WASD move  ·  SPACE interact/select  ·  H return to cubicle (in the office)",
+        {
+          fontSize: "10px",
+          fontFamily: "Courier New",
+          color: "#8f96a8",
+          align: "center",
+          wordWrap: { width: 560 },
+        }
+      )
       .setOrigin(0.5, 0);
 
     const prompt = this.add
@@ -63,7 +80,10 @@ class IntroScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    const advance = () => this.scene.start("BootScene");
+    const advance = () => {
+      MUSIC.stop();
+      this.scene.start("BootScene");
+    };
     this.input.keyboard.once("keydown", advance);
     this.input.once("pointerdown", advance);
   }

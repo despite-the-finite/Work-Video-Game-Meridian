@@ -31,6 +31,8 @@ const COWORKERS = {
     name: "Chip Wexford",
     title: "Client Representative",
     portraitColor: 0xb5942e,
+    triggersBattle: true,
+    battleEnemyId: "scope_creep",
     dialogue: [
       "Oh hey! Quick question.",
       "So it's not really a change... more of a 'clarification' that happens to add scope.",
@@ -54,6 +56,8 @@ const COWORKERS = {
     name: "Trent Okafor",
     title: "QA/QC Manager",
     portraitColor: 0x4a5aa6,
+    triggersBattle: true,
+    battleEnemyId: "redline_barrage",
     dialogue: [
       "Per spec section 4.3.2, that is not how you weld that.",
       "I've issued a nonconformance report. I've issued several, actually.",
@@ -162,6 +166,89 @@ const COWORKERS = {
       "Just a friendly reminder that your compliance training is 'overdue,' not 'optional.'",
       "I'm here if you ever need to talk. Confidentially. Mostly confidentially.",
       "Open enrollment starts Monday. May the odds be ever in your favor.",
+    ],
+  },
+
+  priya_nair: {
+    name: "Priya Nair",
+    title: "Civil Engineer",
+    portraitColor: 0x6b8a3f,
+    dialogue: [
+      "Soil report came back. Turns out the ground is, and I quote, 'complicated.'",
+      "I've moved the retaining wall four times this week. It's load-bearing. Emotionally, now.",
+      "Heading to the break room. If anyone asks, I'm 'reviewing grading calcs.'",
+    ],
+  },
+
+  owen_baptiste: {
+    name: "Owen Baptiste",
+    title: "Electrical Engineer",
+    portraitColor: 0xa66b2e,
+    dialogue: [
+      "The one-line diagram is one line away from being three diagrams.",
+      "Arc flash study says stand back. I always stand back. I stand back for fun now.",
+      "Somebody breakered out the wrong panel again. Not naming names. It was Gary.",
+    ],
+  },
+
+  // CDB floor — Construction department (estimators, schedulers, CMs).
+  // GFS is Engineering; CDB is where the build side of the house sits.
+  frankie_dellucci: {
+    name: "Frankie Dellucci",
+    title: "Senior Estimator",
+    portraitColor: 0x7a5a3a,
+    dialogue: [
+      "I can give you a number. I cannot give you a number you'll like.",
+      "Everything's a rough order of magnitude until somebody signs something.",
+      "Subs bid low, we bid it lower, and somehow we're still the expensive option.",
+    ],
+  },
+
+  wren_castellano: {
+    name: "Wren Castellano",
+    title: "Project Scheduler",
+    portraitColor: 0xc27a1e,
+    triggersBattle: true,
+    battleEnemyId: "schedule_slip",
+    dialogue: [
+      "The critical path moved again. It does that when you look directly at it.",
+      "I have a four-week float and a coworker determined to spend it all on me.",
+      "Let's talk about your logic ties. All three of them. None of them make sense.",
+    ],
+  },
+
+  bram_okonkwo: {
+    name: "Bram Okonkwo",
+    title: "Construction Manager",
+    portraitColor: 0x3a3a5a,
+    dialogue: [
+      "Field wants a decision by lunch. Field always wants a decision by lunch.",
+      "RFI's been open eleven days. I've started naming it.",
+      "Come to CDB more often. Engineering forgets concrete has to actually cure.",
+    ],
+  },
+
+  sal_marchetti: {
+    name: "Sal Marchetti",
+    title: "General Superintendent",
+    portraitColor: 0x8a3a3a,
+    dialogue: [
+      "Walked the site at six. Somebody's already behind and it's not even seven.",
+      "Safety meeting's at noon. Attendance is 'strongly encouraged,' meaning mandatory.",
+      "You engineers draw it. We figure out how it actually stands up.",
+    ],
+  },
+
+  deja_marsh: {
+    name: "Deja Marsh",
+    title: "Engineering Manager — Process Systems",
+    portraitColor: 0x5a2e6b,
+    triggersBattle: true,
+    battleEnemyId: "rival_review",
+    dialogue: [
+      "Oh, you're the GFS manager everyone's talking about.",
+      "My team hit our milestone early. Just saying.",
+      "Let's see whose numbers actually hold up this quarter.",
     ],
   },
 };

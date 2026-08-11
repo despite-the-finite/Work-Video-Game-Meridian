@@ -1,117 +1,256 @@
-// Floor plan modeled on the real office layout (FP_BMCD.png): desk pods
-// running the full length on the west and east sides, a spine of
-// conference rooms across the north, and a big central break room flanked
-// by two conference rooms, mirroring the round break-room-in-the-middle
-// layout from the real floor plan. Room names are placeholders pending
-// confirmation on which ones map to the real conference room names.
+// Two floors, two departments:
+//   GFS — Engineering (the original floor plan, modeled on a real EPC
+//         office layout: desk pods, conference rooms, a break room).
+//   CDB — Construction (estimators, schedulers, construction managers).
+// Both are plain FLOORS entries sharing the same grid legend, so
+// OfficeScene just picks whichever one it's told to render.
 //
 // Legend:
 //   0 = open floor
 //   1 = wall (solid)
 //   2 = desk / conference table (solid)
 //   3 = plant (solid, decorative)
-//   4 = encounter zone floor (random battles trigger here)
 //   6 = break room floor (walkable, slowly restores HP/MP — coffee break)
 //
-// Grid is 72 tiles wide x 26 tall, 32px per tile => 2304x832 world.
+// Office battles are no longer random-tile encounters. Every conference
+// room and every former "solid landmark" room (stairs, restrooms,
+// huddle rooms, utility, etc.) is walkable, and each has one battleObject
+// inside it — walk up and hit SPACE to fight, same interaction pattern as
+// talking to an NPC. See OfficeScene.js's findNearbyBattleObject().
 
-const FLOORPLAN = {
-  tileSize: 32,
-  width: 72,
-  height: 26,
-  layout: [
-    "111111111111111111111111111111111111111111111111111111111111111111111111",
-    "122002200220022002200011111111011111111011111111000220022002200220022001",
-    "122002200220022002200010000001010000001010000001000220022002200220022001",
-    "100000000000000000000010022001010022001010022001000000000000000000000001",
-    "122002200220022002200010000001010000001010000001000220022002200220022001",
-    "122002200220022002200011100111011100111011100111000220022002200220022001",
-    "100000000000000000000000000000000000000000000000000000000000000000000001",
-    "122002200220022002200004444440000000000044444400000220022002200220022001",
-    "122002200220022002200004444440000000000044444400000220022002200220022001",
-    "100000000000000000000000000000000000000000000000000000000000000000000001",
-    "122002200220022002200111111111111166611111111111111220022002200220022001",
-    "122002200220022002200100011666666666666666666660001220022002200220022001",
-    "100000000000000000000100011666226666666666666660001000000000000000000001",
-    "122002200220022002200002001666666666666666666100200220022002200220022001",
-    "122002200220022002200100011666666666666226666110001220022002200220022001",
-    "100000000000000000000100011666666666666666666110001000000000000000000001",
-    "122002200220022002200111111111111166611111111111111220022002200220022001",
-    "122002200220022002200000000000000000000000000000000220022002200220022001",
-    "100000000000000000000000000000444444444444000000000000000000000000000001",
-    "122002200220022002200000000000444444444444000000000220022002200220022001",
-    "122002200220022002200000000000000000000000000000000220022002200220022001",
-    "100000000000000000000044444400000000000000000000000000000000000000000001",
-    "122002200220022002200044444400000000000000000000000220022002200220022001",
-    "122002200220022002200000000000000000000000000000000220022002200220022001",
-    "100000000000000000000000000000000000000000000000000000000000000000000001",
-    "111111111111111111111111111111111111111111111111111111111111111111111111",
-  ],
-
-  // Non-walkable labeled rooms stamped onto the corridor (huddle rooms,
-  // restrooms, stairs, print/copy, etc) — decorative landmarks for now,
-  // matching the small rooms scattered through the real floor plan.
-  landmarks: [
-    { r0: 6, c0: 30, r1: 7, c1: 32, label: "STAIRS" },
-    { r0: 6, c0: 35, r1: 7, c1: 37, label: "RESTROOMS" },
-    { r0: 8, c0: 30, r1: 9, c1: 33, label: "PRINT/COPY" },
-    { r0: 17, c0: 23, r1: 18, c1: 26, label: "HUDDLE\nEVANS" },
-    { r0: 19, c0: 23, r1: 20, c1: 26, label: "QUIET ROOM" },
-    { r0: 17, c0: 44, r1: 18, c1: 47, label: "HUDDLE\nSHERMAN" },
-    { r0: 19, c0: 44, r1: 20, c1: 47, label: "MOTHER'S\nROOM" },
-    { r0: 22, c0: 32, r1: 23, c1: 35, label: "UTILITY" },
-    { r0: 22, c0: 40, r1: 23, c1: 43, label: "STAIRS" },
-  ],
-
-  // Labels for the walk-in conference rooms / break room carved into the layout.
-  roomLabels: [
-    { x: 25.5, y: 1.5, text: "CONF: LA PLATA" },
-    { x: 34.5, y: 1.5, text: "CONF: LONGS" },
-    { x: 43.5, y: 1.5, text: "CONF: GRAYS" },
-    { x: 23, y: 10.5, text: "CONF: PIKES" },
-    { x: 48, y: 10.5, text: "CONF: QUANDARY" },
-    { x: 35.5, y: 10.5, text: "BREAK ROOM" },
-  ],
-
-  // Player starting tile position (col, row) — north corridor above the break room.
-  playerStart: { x: 35, y: 9 },
-
-  // NPC placements: tile position + which coworker data entry to use
-  npcs: [
-    { x: 10, y: 9, coworkerId: "mentor_dave" },
-    { x: 5, y: 3, coworkerId: "renata_osei" },
-    { x: 42, y: 2, coworkerId: "chip_wexford" },
-    { x: 33, y: 2, coworkerId: "marla_voss" },
-    { x: 65, y: 2, coworkerId: "trent_okafor" },
-    { x: 29, y: 6, coworkerId: "deb_halverson" },
-    { x: 29, y: 8, coworkerId: "gary_buffer" },
-    { x: 61, y: 5, coworkerId: "wanda_price" },
-    { x: 13, y: 18, coworkerId: "ottoline_cruz" },
-    { x: 58, y: 12, coworkerId: "sanjay_bhatt" },
-    { x: 35, y: 13, coworkerId: "lou" },
-    { x: 25, y: 2, coworkerId: "reginald_cho" },
-    { x: 49, y: 17, coworkerId: "marisol_fenwick" },
-  ],
-
-  // Home base — the player's own cubicle, and the single hub for every
-  // mode (office / site visit / visitor day). Sits on the west exterior
-  // wall (the main east-west corridor dead-ends there, so it can't pinch
-  // any through-route) rather than the central plaza, which wedged it
-  // between the STAIRS/PRINT-COPY/RESTROOMS landmark blocks and choked
-  // that walkway.
-  homeBase: {
-    x: 1,
-    y: 9,
-    label: "YOUR CUBICLE",
-    options: [
-      { label: "Work the Office Floor", action: "close" },
-      {
-        label: "Site Visit: Meridian Ph.2",
-        action: "travel",
-        sceneKey: "SiteVisitScene",
-        payload: { siteId: "meridian_phase2" },
-      },
-      { label: "Visitor Day", action: "travel", sceneKey: "VisitorScene", payload: {} },
+const FLOORS = {
+  GFS: {
+    tileSize: 32,
+    width: 72,
+    height: 26,
+    layout: [
+      "111111111111111111111111111111111111111111111111111111111111111111111111",
+      "122002200220022002200011111111011111111011111111000220022002200220022001",
+      "122002200220022002200010000001010000001010000001000220022002200220022001",
+      "100000000000000000000010022001010022001010022001000000000000000000000001",
+      "122002200220022002200010000001010000001010000001000220022002200220022001",
+      "122002200220022002200011100111011100111011100111000220022002200220022001",
+      "100000000000000000000000000000000000000000000000000000000000000000000001",
+      "100002200220022002200000000000000000000000000000000220022002200220022001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "100000000000000000000000000000000000000000000000000000000000000000000001",
+      "100002200220022002200111111111111166611111111111111220022002200220022001",
+      "122002200220022002200100011666666666666666666660001220022002200220022001",
+      "100000000000000000000100011666226666666666666660001000000000000000000001",
+      "122002200220022002200002001666666666666666666100200220022002200220022001",
+      "122002200220022002200100011666666666666226666110001220022002200220022001",
+      "100000000000000000000100011666666666666666666110001000000000000000000001",
+      "122002200220022002200111111111111166611111111111111220022002200220022001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "100000000000000000000000000000000000000000000000000000000000000000000001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "100000000000000000000000000000000000000000000000000000000000000000000001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "122002200220022002200000000000000000000000000000000220022002200220022001",
+      "100000000000000000000000000000000000000000000000000000000000000000000001",
+      "111111111111111111111111111111111111111111111111111111111111111111111111",
     ],
+
+    // Non-walkable landmark rooms have all become walkable — see
+    // battleObjects below for what's now inside each of them.
+    landmarks: [
+      { r0: 6, c0: 30, r1: 7, c1: 32, label: "STAIRS" },
+      { r0: 6, c0: 35, r1: 7, c1: 37, label: "RESTROOMS" },
+      { r0: 8, c0: 30, r1: 9, c1: 33, label: "PRINT/COPY" },
+      { r0: 17, c0: 23, r1: 18, c1: 26, label: "HUDDLE\nEVANS" },
+      { r0: 19, c0: 23, r1: 20, c1: 26, label: "QUIET ROOM" },
+      { r0: 17, c0: 44, r1: 18, c1: 47, label: "HUDDLE\nSHERMAN" },
+      { r0: 19, c0: 44, r1: 20, c1: 47, label: "MOTHER'S\nROOM" },
+      { r0: 22, c0: 32, r1: 23, c1: 35, label: "UTILITY" },
+      { r0: 22, c0: 40, r1: 23, c1: 43, label: "STAIRS" },
+    ],
+
+    roomLabels: [
+      { x: 25.5, y: 1.5, text: "CONF: LA PLATA" },
+      { x: 34.5, y: 1.5, text: "CONF: LONGS" },
+      { x: 43.5, y: 1.5, text: "CONF: GRAYS" },
+      { x: 23, y: 10.5, text: "CONF: PIKES" },
+      { x: 48, y: 10.5, text: "CONF: QUANDARY" },
+      { x: 35.5, y: 10.5, text: "BREAK ROOM" },
+    ],
+
+    // Decorative-only props (no gameplay effect) to make the floor feel
+    // more lived-in.
+    decor: [
+      { x: 20, y: 6, type: "watercooler" },
+      { x: 55, y: 6, type: "watercooler" },
+      { x: 15, y: 18, type: "wallart" },
+      { x: 58, y: 18, type: "wallart" },
+    ],
+
+    // Every battle in the office overworld starts here — walk up to one
+    // of these and press SPACE. enemyId fixed = always that fight;
+    // omitted = a random pick from ENEMIES, same variety the old random
+    // encounters had.
+    battleObjects: [
+      { x: 24, y: 3, label: "Whiteboard (LA PLATA)" },
+      { x: 33, y: 3, label: "Conference Phone (LONGS)" },
+      { x: 42, y: 3, label: "AV Remote (GRAYS)" },
+      { x: 48, y: 13, label: "Conference Table (QUANDARY)" },
+      { x: 31, y: 7, label: "Stairwell Landing" },
+      { x: 36, y: 7, label: "Restroom Line" },
+      { x: 31, y: 9, label: "Jammed Printer" },
+      { x: 24, y: 18, label: "Huddle Room Whiteboard" },
+      { x: 24, y: 20, label: "Quiet Room Phone" },
+      { x: 45, y: 18, label: "Huddle Room Whiteboard" },
+      { x: 45, y: 20, label: "Sign-Up Sheet" },
+      { x: 33, y: 23, label: "Supply Cabinet" },
+      { x: 41, y: 23, label: "Stairwell Landing" },
+    ],
+
+    // Player starting tile position (col, row) — right next to the home
+    // base cubicle, so every session starts at the mode-select hub.
+    playerStart: { x: 2, y: 9 },
+
+    // NPC placements: tile position + which coworker data entry to use.
+    // Wander gives a small waypoint loop (all on clear straight corridor
+    // lines, so no pathfinding/collision-avoidance is needed) — the NPC
+    // walks between them at a slow, steady pace instead of standing still.
+    npcs: [
+      { x: 10, y: 9, coworkerId: "mentor_dave" },
+      { x: 5, y: 3, coworkerId: "renata_osei" },
+      { x: 42, y: 2, coworkerId: "chip_wexford" },
+      { x: 33, y: 2, coworkerId: "marla_voss" },
+      { x: 65, y: 2, coworkerId: "trent_okafor" },
+      {
+        x: 24,
+        y: 6,
+        coworkerId: "deb_halverson",
+        wander: [
+          { x: 24, y: 6 },
+          { x: 36, y: 6 },
+        ],
+      },
+      {
+        x: 27,
+        y: 6,
+        coworkerId: "gary_buffer",
+        wander: [
+          { x: 27, y: 6 },
+          { x: 45, y: 6 },
+        ],
+      },
+      { x: 61, y: 5, coworkerId: "wanda_price" },
+      { x: 13, y: 18, coworkerId: "ottoline_cruz" },
+      { x: 58, y: 12, coworkerId: "sanjay_bhatt" },
+      { x: 35, y: 13, coworkerId: "lou" },
+      { x: 25, y: 2, coworkerId: "reginald_cho" },
+      { x: 49, y: 17, coworkerId: "marisol_fenwick" },
+      {
+        x: 35,
+        y: 9,
+        coworkerId: "priya_nair",
+        wander: [
+          { x: 35, y: 9 },
+          { x: 35, y: 13 },
+        ],
+      },
+      { x: 63, y: 9, coworkerId: "owen_baptiste" },
+    ],
+
+    // Home base — the player's own cubicle, and the single hub for every
+    // mode (office / site visit / visitor day / PTO). Sits on the west
+    // exterior wall (the main east-west corridor dead-ends there, so it
+    // can't pinch any through-route).
+    homeBase: {
+      x: 1,
+      y: 9,
+      label: "YOUR CUBICLE",
+      options: [
+        { label: "Work the Office Floor", action: "close" },
+        {
+          label: "Site Visit: Meridian Ph.2",
+          action: "travel",
+          sceneKey: "SiteVisitScene",
+          payload: { siteId: "meridian_phase2" },
+          transitionMessage: "Travelling to Site...",
+        },
+        {
+          label: "Visitor Day",
+          action: "travel",
+          sceneKey: "VisitorScene",
+          payload: {},
+          transitionMessage: "Heading to Visitor Day...",
+        },
+        {
+          label: "Take PTO",
+          action: "pto",
+          transitionMessage: "Requesting Time Off...",
+        },
+      ],
+    },
+
+    // Stairs to the other floor.
+    stairs: {
+      x: 33,
+      y: 9,
+      label: "STAIRS TO CDB",
+      toFloor: "CDB",
+      arriveAt: { x: 22, y: 12 },
+      transitionMessage: "Taking the stairs to CDB...",
+    },
+  },
+
+  CDB: {
+    tileSize: 32,
+    width: 42,
+    height: 16,
+    layout: [
+      "111111111111111111111111111111111111111",
+      "122002200220022011111111102200220022002",
+      "122002200220022010000000102200220022002",
+      "122002200220022010022000102200220022002",
+      "122002200220022010000000102200220022002",
+      "122002200220022011100111102200220022002",
+      "100000000000000000000000000000000000000",
+      "122002200220022000000000002200220022002",
+      "122002200220022000000000002200220022002",
+      "100000000000000000000000000000000000000",
+      "122002200220022000000000002200220022002",
+      "122002200220022000000000002200220022002",
+      "100000000000000000000000000000000000000",
+      "100000000000000000000000000000000000000",
+      "100000000000000000000000000000000000000",
+      "111111111111111111111111111111111111111",
+    ],
+
+    landmarks: [],
+
+    roomLabels: [{ x: 20.5, y: 1.5, text: "CONF: FOUNDATION" }],
+
+    battleObjects: [{ x: 19, y: 3, label: "Bid Board (FOUNDATION)" }],
+
+    npcs: [
+      { x: 7, y: 3, coworkerId: "frankie_dellucci" },
+      { x: 33, y: 3, coworkerId: "wren_castellano" },
+      { x: 7, y: 8, coworkerId: "bram_okonkwo" },
+      { x: 33, y: 8, coworkerId: "sal_marchetti" },
+      {
+        x: 12,
+        y: 12,
+        coworkerId: "deja_marsh",
+        wander: [
+          { x: 12, y: 12 },
+          { x: 28, y: 12 },
+        ],
+      },
+    ],
+
+    // No home base here — mode selection lives on GFS, at the player's
+    // own desk. This floor is just somewhere else to work and fight.
+    stairs: {
+      x: 20,
+      y: 12,
+      label: "STAIRS TO GFS",
+      toFloor: "GFS",
+      arriveAt: { x: 34, y: 9 },
+      transitionMessage: "Taking the stairs to GFS...",
+    },
   },
 };

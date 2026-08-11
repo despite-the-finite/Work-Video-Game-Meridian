@@ -28,3 +28,17 @@ function getRank(level, executiveUnlocked) {
 function getRankTitle(level, executiveUnlocked) {
   return getRank(level, executiveUnlocked).title;
 }
+
+// Shared stat growth for a level up, however it was triggered — clearing
+// xpToNext in battle, or maxing out Bonus Potential (see bonus.js).
+function levelUpPlayer() {
+  const p = PLAYER_STATE;
+  p.level += 1;
+  p.maxHp += 6;
+  p.maxMp += 2;
+  p.atk += 2;
+  p.def += 1;
+  p.hp = p.maxHp;
+  p.mp = p.maxMp;
+  p.xpToNext = Math.floor(p.xpToNext * 1.4);
+}

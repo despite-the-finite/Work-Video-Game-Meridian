@@ -16,6 +16,7 @@
   }
   #game-container {
     box-shadow: 0 0 0 4px #2a2d3a, 0 0 40px rgba(0,0,0,0.6);
+    cursor: none;
   }
 </style>
 </head>
@@ -24,6 +25,9 @@
 
 <!-- Phaser via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+<!-- Audio -->
+<script src="src/audio.js"></script>
 
 <!-- Game data -->
 <script src="src/data/ranks.js"></script>
@@ -42,6 +46,7 @@
 <script src="src/scenes/IntroScene.js"></script>
 <script src="src/scenes/BootScene.js"></script>
 <script src="src/scenes/OfficeScene.js"></script>
+<script src="src/scenes/TransitionScene.js"></script>
 <script src="src/scenes/SiteVisitScene.js"></script>
 <script src="src/scenes/VisitorScene.js"></script>
 <script src="src/scenes/BattleScene.js"></script>

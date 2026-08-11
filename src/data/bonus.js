@@ -1,7 +1,8 @@
-// Bonus Potential — the game's reputation score. Starts neutral at 50 and
-// moves based on how battles/negotiations go, not just pass/fail on
-// checkpoints. Purely a score + flavor label for now; nothing gates on it
-// yet, but it's tracked persistently on PLAYER_STATE.
+// Bonus Potential — the game's reputation score. Starts low at 20 and moves
+// based on how battles/negotiations go, not just pass/fail on checkpoints.
+// Maxing it out at 100 rolls over (like an XP bar) and queues a level up —
+// same as XP, it doesn't apply until a site-visit change order is approved
+// (see BattleScene's onEnemyDefeated / PLAYER_STATE.levelUpPending).
 
 const BONUS_TIERS = [
   { min: 0, label: "Not Bonus Eligible" },
@@ -21,7 +22,13 @@ function getBonusLabel(value) {
 
 function applyBonusPotential(delta) {
   const p = PLAYER_STATE;
-  p.bonusPotential = Phaser.Math.Clamp(p.bonusPotential + delta, 0, 100);
+  p.bonusPotential += delta;
+  while (p.bonusPotential >= 100) {
+    p.bonusPotential -= 100;
+    p.levelUpPending = true;
+  }
+  p.bonusPotential = Phaser.Math.Clamp(p.bonusPotential, 0, 100);
+
   const sign = delta > 0 ? "+" : "";
   return `Bonus Potential ${sign}${delta} (${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)})`;
 }

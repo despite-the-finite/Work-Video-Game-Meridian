@@ -304,19 +304,14 @@ class BattleScene extends Phaser.Scene {
   onEnemyDefeated() {
     const p = PLAYER_STATE;
     const rankBefore = getRankTitle(p.level, p.executiveUnlocked);
+
+    // Earning enough XP only queues a level up (see levelUpPending on
+    // PLAYER_STATE) — it doesn't apply until a site-visit change order is
+    // approved below, so office battles alone can't carry you to Executive.
     p.xp += this.enemy.xp;
-    let leveledUp = false;
-    while (p.xp >= p.xpToNext) {
+    if (!p.levelUpPending && p.xp >= p.xpToNext) {
       p.xp -= p.xpToNext;
-      p.level += 1;
-      p.maxHp += 6;
-      p.maxMp += 2;
-      p.atk += 2;
-      p.def += 1;
-      p.hp = p.maxHp;
-      p.mp = p.maxMp;
-      p.xpToNext = Math.floor(p.xpToNext * 1.4);
-      leveledUp = true;
+      p.levelUpPending = true;
     }
 
     let msg;
@@ -327,23 +322,24 @@ class BattleScene extends Phaser.Scene {
       msg = `${this.enemy.winMessage || `${this.enemy.name} concedes.`}\nPROMOTED! You are now Executive.`;
       msg += `\n${applyBonusPotential(15)}`;
     } else if (this.isClientNegotiation) {
-      const rankAfter = getRankTitle(p.level, p.executiveUnlocked);
       msg = `${this.enemy.winMessage || `${this.enemy.name} backs down.`} +${this.enemy.xp} XP.`;
-      if (rankAfter !== rankBefore) {
-        msg += `\nPROMOTED! You are now ${rankAfter}.`;
-      } else if (leveledUp) {
-        msg += `  LEVEL UP! You are now Lv.${p.level}.`;
-      }
       msg += `\n${applyBonusPotential(8)}`;
-    } else {
-      const rankAfter = getRankTitle(p.level, p.executiveUnlocked);
-      msg = `${this.enemy.name} has been resolved. +${this.enemy.xp} XP.`;
-      if (rankAfter !== rankBefore) {
-        msg += `\nPROMOTED! You are now ${rankAfter}.`;
-      } else if (leveledUp) {
-        msg += `  LEVEL UP! You are now Lv.${p.level}.`;
+      if (p.levelUpPending) {
+        p.levelUpPending = false;
+        levelUpPlayer();
+        const rankAfter = getRankTitle(p.level, p.executiveUnlocked);
+        msg +=
+          rankAfter !== rankBefore
+            ? `\nChange order approved — PROMOTED! You are now ${rankAfter}.`
+            : `\nChange order approved — LEVEL UP! You are now Lv.${p.level}.`;
       }
-      msg += `\n${applyBonusPotential(1)}`;
+    } else {
+      msg = `${this.enemy.winMessage ? this.enemy.winMessage + " " : `${this.enemy.name} has been resolved. `}+${this.enemy.xp} XP.`;
+      msg += `\n${applyBonusPotential(this.enemy.bonusPotential || 1)}`;
+      if (p.levelUpPending) {
+        msg +=
+          "\nYou're ready to level up — get a change order approved on a site visit to make it official.";
+      }
     }
 
     this.consumeWellFed();

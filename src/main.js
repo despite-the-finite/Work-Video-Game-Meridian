@@ -13,7 +13,11 @@ const PLAYER_STATE = {
   xp: 0,
   xpToNext: 20,
   executiveUnlocked: false,
-  bonusPotential: 50,
+  bonusPotential: 20,
+  // Earning enough XP/Bonus Potential only queues a level up — it doesn't
+  // apply until a site-visit change order is approved, so leveling needs
+  // progress in both the office and on-site, not either alone.
+  levelUpPending: false,
   visitorGreeted: { wife: false, daughter: false, parents: false },
   wellFedBattles: 0,
 };
@@ -37,10 +41,11 @@ const config = {
     IntroScene,
     BootScene,
     OfficeScene,
+    TransitionScene,
     SiteVisitScene,
     VisitorScene,
     BattleScene,
   ],
 };
 
-window.game = new Phaser.Game(config);
+new Phaser.Game(config);

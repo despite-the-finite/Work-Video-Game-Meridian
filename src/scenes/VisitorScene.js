@@ -33,6 +33,8 @@ class VisitorScene extends Phaser.Scene {
         } else if (ch === "5") {
           this.add.image(px, py, "tile_floor");
           this.solids.create(px, py, "tile_foodtruck").setSize(T, T).refreshBody();
+        } else if (ch === "7") {
+          this.add.image(px, py, "tile_flowerbed");
         } else {
           this.add.image(px, py, "tile_floor");
         }
@@ -269,6 +271,15 @@ class VisitorScene extends Phaser.Scene {
     } else if (v.type === "vendor") {
       p.wellFedBattles = 3;
       lines.push(`(You feel Well Fed! +3 ATK for your next 3 battles. HP/MP restored.)`);
+    } else if (v.type === "subcontractor") {
+      lines.push(`(You feel recharged. HP/MP restored. ${applyBonusPotential(2)})`);
+    } else if (v.type === "client") {
+      if (!p.visitorGreeted[v.id]) {
+        p.visitorGreeted[v.id] = true;
+        lines.push(`(You feel recharged. HP/MP restored. ${applyBonusPotential(5)})`);
+      } else {
+        lines.push(`(You feel recharged. HP/MP restored.)`);
+      }
     }
 
     this.openMessage(v.name, lines, () => this.refreshHud());

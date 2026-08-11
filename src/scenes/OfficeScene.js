@@ -1,20 +1,30 @@
-// The walkable overworld — currently a placeholder office floor built from
-// FLOORPLAN. Swap FLOORPLAN's layout array for the real floor plan later;
-// nothing else in this file needs to change as long as the legend holds.
+// The walkable overworld — renders whichever floor it's told to (GFS or
+// CDB, see FLOORS in floorplan.js). Nothing else in this file needs to
+// change if a floor's layout changes, as long as the legend holds.
+//
+// Battles no longer trigger from random tiles: every conference room and
+// every former "solid landmark" room has one battleObject inside it —
+// walk up and hit SPACE, same interaction as talking to an NPC. A few
+// NPCs also trigger a battle when their dialogue ends (coworker.triggersBattle).
 
 class OfficeScene extends Phaser.Scene {
   constructor() {
     super("OfficeScene");
   }
 
+  init(data) {
+    this.floorId = (data && data.floorId) || "GFS";
+    this.floor = FLOORS[this.floorId];
+    this.arrivePos = data && data.arrivePos;
+    this.ptoResult = !!(data && data.ptoResult);
+  }
+
   create() {
-    const T = FLOORPLAN.tileSize;
+    const T = this.floor.tileSize;
     this.tileSize = T;
-    this.grid = FLOORPLAN.layout.map((row) => row.split(""));
+    this.grid = this.floor.layout.map((row) => row.split(""));
 
     this.solids = this.physics.add.staticGroup();
-    this.encounterTiles = new Set();
-    this.healTiles = new Set();
 
     for (let y = 0; y < this.grid.length; y++) {
       for (let x = 0; x < this.grid[y].length; x++) {
@@ -30,26 +40,22 @@ class OfficeScene extends Phaser.Scene {
         } else if (ch === "3") {
           this.add.image(px, py, "tile_floor");
           this.solids.create(px, py, "tile_plant").setSize(T * 0.6, T * 0.6).refreshBody();
-        } else if (ch === "4") {
-          this.add.image(px, py, "tile_encounter");
-          this.encounterTiles.add(`${x},${y}`);
         } else if (ch === "6") {
           this.add.image(px, py, "tile_break");
-          this.healTiles.add(`${x},${y}`);
         } else {
           this.add.image(px, py, "tile_floor");
         }
       }
     }
 
-    // Landmark rooms (huddles, restrooms, stairs, print/copy) — decorative,
-    // non-walkable blocks stamped over corridor floor.
-    (FLOORPLAN.landmarks || []).forEach((lm) => {
+    // Landmark rooms (huddles, restrooms, stairs, print/copy, etc) — fully
+    // walkable now; each one has a battleObject inside (see below).
+    (this.floor.landmarks || []).forEach((lm) => {
       for (let y = lm.r0; y <= lm.r1; y++) {
         for (let x = lm.c0; x <= lm.c1; x++) {
           const px = x * T + T / 2;
           const py = y * T + T / 2;
-          this.solids.create(px, py, "tile_landmark").setSize(T, T).refreshBody();
+          this.add.image(px, py, "tile_landmark");
         }
       }
       const cx = ((lm.c0 + lm.c1 + 1) / 2) * T;
@@ -64,8 +70,22 @@ class OfficeScene extends Phaser.Scene {
         .setOrigin(0.5);
     });
 
+    // Decorative-only props — no gameplay effect, just make the floor feel
+    // more lived-in.
+    (this.floor.decor || []).forEach((d) => {
+      const px = d.x * T + T / 2;
+      const py = d.y * T + T / 2;
+      if (d.type === "watercooler") {
+        this.add.image(px, py, "tile_floor");
+        this.solids.create(px, py, "tile_watercooler").setSize(T * 0.6, T * 0.6).refreshBody();
+      } else if (d.type === "wallart") {
+        this.add.image(px, py, "tile_floor");
+        this.add.image(px, py, "tile_wallart");
+      }
+    });
+
     // Conference room / break room labels
-    (FLOORPLAN.roomLabels || []).forEach((rl) => {
+    (this.floor.roomLabels || []).forEach((rl) => {
       this.add
         .text(rl.x * T, rl.y * T, rl.text, {
           fontSize: "10px",
@@ -76,30 +96,47 @@ class OfficeScene extends Phaser.Scene {
         .setOrigin(0.5);
     });
 
-    // Player
-    const start = FLOORPLAN.playerStart;
-    this.player = this.physics.add.sprite(
-      start.x * T + T / 2,
-      start.y * T + T / 2,
-      "player"
-    );
+    // Player — resume-from-battle position wins if set, then a cross-floor
+    // stairs arrival point, then the floor's normal spawn.
+    const returnPos = this.registry.get("returnPos");
+    const start = returnPos || this.arrivePos || this.floor.playerStart;
+    const startPx = returnPos ? start.x : start.x * T + T / 2;
+    const startPy = returnPos ? start.y : start.y * T + T / 2;
+    this.player = this.physics.add.sprite(startPx, startPy, "player");
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(T * 0.6, T * 0.4);
     this.player.body.setOffset(T * 0.075, T * 0.55);
     this.physics.add.collider(this.player, this.solids);
+    this.registry.remove("returnPos");
 
-    // NPCs
+    // NPCs — a few wander a small waypoint loop instead of standing still.
     this.npcGroup = this.physics.add.staticGroup();
     this.npcData = [];
-    FLOORPLAN.npcs.forEach((def) => {
+    this.wanderers = [];
+    (this.floor.npcs || []).forEach((def) => {
       const cw = COWORKERS[def.coworkerId];
       const px = def.x * T + T / 2;
       const py = def.y * T + T / 2;
       const texKey = this.textures.exists(`npc_${def.coworkerId}`)
         ? `npc_${def.coworkerId}`
         : "npc_default";
-      const spr = this.npcGroup.create(px, py, texKey);
-      spr.setSize(T * 0.6, T * 0.5).refreshBody();
+
+      let spr;
+      if (def.wander) {
+        spr = this.physics.add.sprite(px, py, texKey);
+        this.physics.add.collider(spr, this.solids);
+        this.physics.add.collider(this.player, spr);
+        this.wanderers.push({
+          sprite: spr,
+          waypoints: def.wander.map((w) => ({ x: w.x * T + T / 2, y: w.y * T + T / 2 })),
+          index: 0,
+          state: "idle",
+          timer: Phaser.Math.Between(500, 2000),
+        });
+      } else {
+        spr = this.npcGroup.create(px, py, texKey);
+        spr.setSize(T * 0.6, T * 0.5).refreshBody();
+      }
       this.npcData.push({ sprite: spr, coworker: cw, lineIndex: 0 });
       this.add
         .text(px, py - T * 0.9, cw.name, {
@@ -111,28 +148,69 @@ class OfficeScene extends Phaser.Scene {
     });
     this.physics.add.collider(this.player, this.npcGroup);
 
-    // Home base — the player's own cubicle. Interacting opens the
-    // mode-select menu (office / site visit / visitor day), so it's the
-    // single hub for every mode instead of separate portal tiles.
-    const hb = FLOORPLAN.homeBase;
-    this.homeBaseGroup = this.physics.add.staticGroup();
-    const hbPx = hb.x * T + T / 2;
-    const hbPy = hb.y * T + T / 2;
-    this.homeBaseSprite = this.homeBaseGroup.create(hbPx, hbPy, "tile_cubicle");
-    this.homeBaseSprite.setSize(T, T).refreshBody();
-    this.add
-      .text(hbPx, hbPy - T * 0.9, hb.label, {
-        fontSize: "9px",
-        fontFamily: "Courier New",
-        color: "#ffe9a8",
-        align: "center",
-      })
-      .setOrigin(0.5);
-    this.physics.add.collider(this.player, this.homeBaseGroup);
+    // Battle objects — every conference room and former-landmark room has
+    // one. Walk up and press SPACE to fight.
+    this.battleObjectGroup = this.physics.add.staticGroup();
+    this.battleObjectData = [];
+    (this.floor.battleObjects || []).forEach((def) => {
+      const px = def.x * T + T / 2;
+      const py = def.y * T + T / 2;
+      const spr = this.battleObjectGroup.create(px, py, "tile_battle_object");
+      spr.setSize(T * 0.7, T * 0.7).refreshBody();
+      this.battleObjectData.push({ sprite: spr, def });
+      this.add
+        .text(px, py - T * 0.8, def.label, {
+          fontSize: "8px",
+          fontFamily: "Courier New",
+          color: "#e08a8a",
+          align: "center",
+        })
+        .setOrigin(0.5);
+    });
+    this.physics.add.collider(this.player, this.battleObjectGroup);
+
+    // Home base — only GFS has one; mode selection lives at the player's
+    // own desk, not duplicated per floor.
+    if (this.floor.homeBase) {
+      const hb = this.floor.homeBase;
+      this.homeBaseGroup = this.physics.add.staticGroup();
+      const hbPx = hb.x * T + T / 2;
+      const hbPy = hb.y * T + T / 2;
+      this.homeBaseSprite = this.homeBaseGroup.create(hbPx, hbPy, "tile_cubicle");
+      this.homeBaseSprite.setSize(T, T).refreshBody();
+      this.add
+        .text(hbPx, hbPy - T * 0.9, hb.label, {
+          fontSize: "9px",
+          fontFamily: "Courier New",
+          color: "#ffe9a8",
+          align: "center",
+        })
+        .setOrigin(0.5);
+      this.physics.add.collider(this.player, this.homeBaseGroup);
+    }
+
+    // Stairs to the other floor.
+    if (this.floor.stairs) {
+      const st = this.floor.stairs;
+      this.stairsGroup = this.physics.add.staticGroup();
+      const spx = st.x * T + T / 2;
+      const spy = st.y * T + T / 2;
+      this.stairsSprite = this.stairsGroup.create(spx, spy, "tile_portal");
+      this.stairsSprite.setSize(T * 0.9, T * 0.7).refreshBody();
+      this.add
+        .text(spx, spy - T * 0.9, st.label, {
+          fontSize: "9px",
+          fontFamily: "Courier New",
+          color: "#ffb454",
+          align: "center",
+        })
+        .setOrigin(0.5);
+      this.physics.add.collider(this.player, this.stairsGroup);
+    }
 
     // Camera / world bounds
-    const worldW = FLOORPLAN.width * T;
-    const worldH = FLOORPLAN.height * T;
+    const worldW = this.floor.width * T;
+    const worldH = this.floor.height * T;
     this.physics.world.setBounds(0, 0, worldW, worldH);
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
@@ -148,31 +226,22 @@ class OfficeScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE
     );
+    this.homeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H);
 
-    this.time.addEvent({ delay: 1500, loop: true, callback: this.healTick, callbackScope: this });
+    if (this.floor.hasBreakRoom !== false) {
+      this.time.addEvent({ delay: 1500, loop: true, callback: this.healTick, callbackScope: this });
+    }
 
     this.buildHud();
     this.buildDialogueBox();
-    this.buildModeMenu();
+    if (this.floor.homeBase) this.buildModeMenu();
 
     this.encounterLocked = false;
     this.activeDialogueNpc = null;
 
-    // Resume-from-battle: restore last known position if we have one
-    if (this.registry.get("returnPos")) {
-      const p = this.registry.get("returnPos");
-      this.player.setPosition(p.x, p.y);
-      this.registry.remove("returnPos");
-    }
-
-    // Prime encounter tracking from wherever the player actually ended up
-    // (fresh spawn or resumed from battle) so landing back on a red tile
-    // doesn't immediately re-roll another fight.
-    const startKey = `${Math.floor(this.player.x / T)},${Math.floor(this.player.y / T)}`;
-    this.lastTileKey = startKey;
-    this.inEncounterZone = this.encounterTiles.has(startKey);
-
     this.refreshHud();
+
+    if (this.ptoResult) this.applyPtoResult();
   }
 
   buildHud() {
@@ -185,10 +254,19 @@ class OfficeScene extends Phaser.Scene {
         fontSize: "12px",
         fontFamily: "Courier New",
         color: "#dff0ff",
+        wordWrap: { width: 220 },
       })
       .setScrollFactor(0);
+    this.floorLabel = this.add
+      .text(636, 8, this.floorId, {
+        fontSize: "11px",
+        fontFamily: "Courier New",
+        color: "#8f96a8",
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
     this.helpText = this.add
-      .text(4, 460, "Arrows/WASD move  |  SPACE talk/interact", {
+      .text(4, 460, "Arrows/WASD move  |  SPACE talk/interact  |  H cubicle", {
         fontSize: "10px",
         fontFamily: "Courier New",
         color: "#8f96a8",
@@ -199,11 +277,43 @@ class OfficeScene extends Phaser.Scene {
   refreshHud() {
     const p = PLAYER_STATE;
     const wellFedNote = p.wellFedBattles > 0 ? `  (Well Fed x${p.wellFedBattles})` : "";
+    const pendingNote = p.levelUpPending
+      ? "\nPending promotion — approve a change order on-site to apply it"
+      : "";
     this.hudText.setText(
       `${getRankTitle(p.level, p.executiveUnlocked)} (Lv.${p.level})\n` +
         `HP ${p.hp}/${p.maxHp}  MP ${p.mp}/${p.maxMp}\n` +
-        `Bonus: ${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)}${wellFedNote}`
+        `Bonus: ${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)}${wellFedNote}${pendingNote}`
     );
+    this.hudBg.height = p.levelUpPending ? 96 : 62;
+  }
+
+  applyPtoResult() {
+    const p = PLAYER_STATE;
+    const cost = 15;
+    const before = p.bonusPotential;
+    p.hp = p.maxHp;
+    p.mp = p.maxMp;
+    p.bonusPotential = Phaser.Math.Clamp(p.bonusPotential - cost, 0, 100);
+    this.refreshHud();
+    const banner = this.add
+      .text(
+        320,
+        70,
+        `Colleen and Indra pulled off a long weekend away. HP/MP fully restored.\nBonus Potential -${before - p.bonusPotential} (now ${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)}).`,
+        {
+          fontSize: "11px",
+          fontFamily: "Courier New",
+          color: "#ffe9a8",
+          backgroundColor: "#14161c",
+          padding: { x: 8, y: 6 },
+          wordWrap: { width: 560 },
+          align: "center",
+        }
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+    this.time.delayedCall(3500, () => banner.destroy());
   }
 
   buildDialogueBox() {
@@ -271,9 +381,13 @@ class OfficeScene extends Phaser.Scene {
       this.dialogueContainer.setVisible(false);
       const shouldFightBoss = npc.readyForBoss;
       const bossEnemyId = npc.coworker.bossEnemyId;
+      const triggersBattle = npc.coworker.triggersBattle;
+      const battleEnemyId = npc.coworker.battleEnemyId;
       this.activeDialogueNpc = null;
       if (shouldFightBoss) {
         this.startBossFight(bossEnemyId);
+      } else if (triggersBattle) {
+        this.startBattle(battleEnemyId);
       }
     } else {
       this.showDialogueLine();
@@ -283,10 +397,10 @@ class OfficeScene extends Phaser.Scene {
   buildModeMenu() {
     this.modeMenuContainer = this.add.container(0, 0).setScrollFactor(0);
     const bg = this.add
-      .rectangle(320, 240, 320, 170, 0x14161c, 0.95)
+      .rectangle(320, 240, 320, 190, 0x14161c, 0.95)
       .setStrokeStyle(2, 0x4a90d9);
     const title = this.add
-      .text(320, 180, "YOUR CUBICLE", {
+      .text(320, 165, "YOUR CUBICLE", {
         fontSize: "13px",
         fontFamily: "Courier New",
         color: "#ffe9a8",
@@ -306,8 +420,8 @@ class OfficeScene extends Phaser.Scene {
   openModeMenu() {
     this.selectedMenuIndex = 0;
     this.modeMenuTexts.forEach((t) => t.destroy());
-    this.modeMenuTexts = FLOORPLAN.homeBase.options.map((opt, i) =>
-      this.add.text(215, 205 + i * 22, opt.label, {
+    this.modeMenuTexts = this.floor.homeBase.options.map((opt, i) =>
+      this.add.text(200, 190 + i * 22, opt.label, {
         fontSize: "12px",
         fontFamily: "Courier New",
         color: "#ffffff",
@@ -328,11 +442,22 @@ class OfficeScene extends Phaser.Scene {
   }
 
   confirmModeMenu() {
-    const opt = FLOORPLAN.homeBase.options[this.selectedMenuIndex];
+    const opt = this.floor.homeBase.options[this.selectedMenuIndex];
     this.closeModeMenu();
     if (opt.action === "travel") {
-      this.travelTo(opt.sceneKey, opt.payload);
+      this.travelTo(opt.sceneKey, opt.payload, opt.transitionMessage);
+    } else if (opt.action === "pto") {
+      this.takePto(opt.transitionMessage);
     }
+  }
+
+  takePto(message) {
+    this.scene.start("TransitionScene", {
+      message,
+      nextScene: "OfficeScene",
+      nextPayload: { floorId: this.floorId, ptoResult: true },
+      holdMs: 1100,
+    });
   }
 
   startBossFight(enemyId) {
@@ -340,6 +465,13 @@ class OfficeScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
     this.scene.start("BattleScene", { enemyId, isBoss: true });
+  }
+
+  startBattle(enemyId) {
+    this.encounterLocked = true;
+    this.player.setVelocity(0, 0);
+    this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
+    this.scene.start("BattleScene", { enemyId });
   }
 
   findNearbyNpc() {
@@ -356,7 +488,22 @@ class OfficeScene extends Phaser.Scene {
     return null;
   }
 
+  findNearbyBattleObject() {
+    const T = this.tileSize;
+    for (const obj of this.battleObjectData) {
+      const d = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        obj.sprite.x,
+        obj.sprite.y
+      );
+      if (d < T * 1.2) return obj;
+    }
+    return null;
+  }
+
   findNearbyHomeBase() {
+    if (!this.homeBaseSprite) return null;
     const T = this.tileSize;
     const d = Phaser.Math.Distance.Between(
       this.player.x,
@@ -364,26 +511,57 @@ class OfficeScene extends Phaser.Scene {
       this.homeBaseSprite.x,
       this.homeBaseSprite.y
     );
-    return d < T * 1.2 ? FLOORPLAN.homeBase : null;
+    return d < T * 1.2 ? this.floor.homeBase : null;
   }
 
-  travelTo(sceneKey, payload) {
+  findNearbyStairs() {
+    if (!this.stairsSprite) return null;
+    const T = this.tileSize;
+    const d = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.stairsSprite.x,
+      this.stairsSprite.y
+    );
+    return d < T * 1.2 ? this.floor.stairs : null;
+  }
+
+  travelTo(sceneKey, payload, transitionMessage) {
     this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
-    this.scene.start(sceneKey, payload || {});
+    if (transitionMessage) {
+      this.scene.start("TransitionScene", {
+        message: transitionMessage,
+        nextScene: sceneKey,
+        nextPayload: payload || {},
+      });
+    } else {
+      this.scene.start(sceneKey, payload || {});
+    }
   }
 
-  update() {
+  // "H" shortcut — warps to the tile just east of the cubicle (the same
+  // spot the player spawns at) rather than opening the menu outright.
+  warpToHomeBase() {
+    if (!this.homeBaseSprite) return;
+    const T = this.tileSize;
+    this.player.setPosition(this.homeBaseSprite.x + T, this.homeBaseSprite.y);
+    this.player.setVelocity(0, 0);
+  }
+
+  update(time, delta) {
     if (this.dialogueContainer.visible) {
       this.player.setVelocity(0, 0);
+      this.updateWanderers(delta);
       if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
         this.advanceDialogue();
       }
       return;
     }
 
-    if (this.modeMenuContainer.visible) {
+    if (this.floor.homeBase && this.modeMenuContainer.visible) {
       this.player.setVelocity(0, 0);
-      const optionCount = FLOORPLAN.homeBase.options.length;
+      this.updateWanderers(delta);
+      const optionCount = this.floor.homeBase.options.length;
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
         this.selectedMenuIndex = (this.selectedMenuIndex - 1 + optionCount) % optionCount;
         this.updateModeMenuCursor();
@@ -398,6 +576,7 @@ class OfficeScene extends Phaser.Scene {
 
     if (this.encounterLocked) {
       this.player.setVelocity(0, 0);
+      this.updateWanderers(delta);
       return;
     }
 
@@ -412,23 +591,68 @@ class OfficeScene extends Phaser.Scene {
     const vec = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
     this.player.setVelocity(vec.x, vec.y);
 
+    if (Phaser.Input.Keyboard.JustDown(this.homeKey)) {
+      this.warpToHomeBase();
+      this.updateWanderers(delta);
+      return;
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
       const npc = this.findNearbyNpc();
+      const battleObj = this.findNearbyBattleObject();
+      const homeBase = this.findNearbyHomeBase();
+      const stairs = this.findNearbyStairs();
       if (npc) {
         this.openDialogue(npc);
-      } else if (this.findNearbyHomeBase()) {
+      } else if (battleObj) {
+        const enemyId = battleObj.def.enemyId || Phaser.Utils.Array.GetRandom(ENEMIES).id;
+        this.startBattle(enemyId);
+      } else if (homeBase) {
         this.openModeMenu();
+      } else if (stairs) {
+        this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
+        this.scene.start("TransitionScene", {
+          message: stairs.transitionMessage,
+          nextScene: "OfficeScene",
+          nextPayload: { floorId: stairs.toFloor, arrivePos: stairs.arriveAt },
+        });
       }
     }
 
-    this.checkEncounterTile();
+    this.updateWanderers(delta);
+  }
+
+  updateWanderers(delta) {
+    const speed = 42;
+    this.wanderers.forEach((w) => {
+      if (w.state === "idle") {
+        w.sprite.setVelocity(0, 0);
+        w.timer -= delta;
+        if (w.timer <= 0) {
+          w.index = (w.index + 1) % w.waypoints.length;
+          w.state = "moving";
+        }
+        return;
+      }
+      const target = w.waypoints[w.index];
+      const dx = target.x - w.sprite.x;
+      const dy = target.y - w.sprite.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 4) {
+        w.sprite.setVelocity(0, 0);
+        w.state = "idle";
+        w.timer = Phaser.Math.Between(2500, 5000);
+      } else {
+        w.sprite.setVelocity((dx / dist) * speed, (dy / dist) * speed);
+      }
+    });
   }
 
   healTick() {
     const T = this.tileSize;
     const tx = Math.floor(this.player.x / T);
     const ty = Math.floor(this.player.y / T);
-    if (!this.healTiles.has(`${tx},${ty}`)) return;
+    if (this.grid[ty] === undefined || this.grid[ty][tx] !== "6") return;
 
     const p = PLAYER_STATE;
     let healed = false;
@@ -457,33 +681,5 @@ class OfficeScene extends Phaser.Scene {
         onComplete: () => floatText.destroy(),
       });
     }
-  }
-
-  // Rolls only on the step that crosses INTO a red zone from outside it,
-  // not on every tile crossed while still inside — otherwise a multi-tile
-  // zone gets one independent roll per tile and a single walk-through
-  // compounds to a near-certain fight.
-  checkEncounterTile() {
-    const T = this.tileSize;
-    const tx = Math.floor(this.player.x / T);
-    const ty = Math.floor(this.player.y / T);
-    const key = `${tx},${ty}`;
-    if (key === this.lastTileKey) return;
-    this.lastTileKey = key;
-
-    const onEncounterTile = this.encounterTiles.has(key);
-    if (onEncounterTile && !this.inEncounterZone && Phaser.Math.Between(1, 100) <= 18) {
-      this.triggerEncounter();
-    }
-    this.inEncounterZone = onEncounterTile;
-  }
-
-  triggerEncounter() {
-    this.encounterLocked = true;
-    this.player.setVelocity(0, 0);
-    this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
-
-    const enemy = Phaser.Utils.Array.GetRandom(ENEMIES);
-    this.scene.start("BattleScene", { enemyId: enemy.id });
   }
 }

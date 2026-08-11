@@ -9,21 +9,23 @@ class BootScene extends Phaser.Scene {
   }
 
   create() {
-    const T = FLOORPLAN.tileSize;
+    const T = FLOORS.GFS.tileSize;
 
     this.generateFloorTexture(T);
     this.generateWallTexture(T);
     this.generateDeskTexture(T);
     this.generatePlantTexture(T);
-    this.generateEncounterTexture(T);
+    this.generateBattleObjectTexture(T);
     this.generateBreakRoomTexture(T);
     this.generateLandmarkTexture(T);
     this.generateCubicleTexture(T);
+    this.generateWaterCoolerTexture(T);
+    this.generateWallArtTexture(T);
     this.generateActorTexture("player", T, 0x4a90d9);
     this.generateActorTexture("npc_default", T, 0x8a6d3b);
     Object.keys(COWORKERS).forEach((id) => {
       const cw = COWORKERS[id];
-      this.generateActorTexture(`npc_${id}`, T, cw.portraitColor || 0x8a6d3b);
+      this.generateActorTexture(`npc_${id}`, T, cw.portraitColor || 0x8a6d3b, "business", cw.hairColor);
     });
 
     // Site visit textures
@@ -45,8 +47,9 @@ class BootScene extends Phaser.Scene {
 
     // Visitor Day textures
     this.generateFoodTruckTexture(T);
+    this.generateFlowerBedTexture(T);
     VISITORS.forEach((v) => {
-      this.generateActorTexture(`visitor_${v.id}`, T, v.portraitColor || 0x8a6d3b, "casual");
+      this.generateActorTexture(`visitor_${v.id}`, T, v.portraitColor || 0x8a6d3b, "casual", v.hairColor);
     });
 
     this.scene.start("OfficeScene");
@@ -54,21 +57,59 @@ class BootScene extends Phaser.Scene {
 
   generateFloorTexture(T) {
     const g = this.add.graphics();
-    g.fillStyle(0xc9c2a6, 1);
+    g.fillStyle(0xd4cdb8, 1);
     g.fillRect(0, 0, T, T);
-    g.lineStyle(1, 0xb5ae92, 1);
+    g.lineStyle(1, 0xc2bba6, 0.7);
     g.strokeRect(0, 0, T, T);
     g.generateTexture("tile_floor", T, T);
     g.destroy();
   }
 
+  // Thin architectural wall line on a floor-toned backdrop, rather than a
+  // solid opaque block — reads like a floor-plan wall symbol even though
+  // the whole tile is still solid for collision.
   generateWallTexture(T) {
     const g = this.add.graphics();
-    g.fillStyle(0x3c3f4c, 1);
+    g.fillStyle(0xd4cdb8, 1);
     g.fillRect(0, 0, T, T);
     g.fillStyle(0x2a2d3a, 1);
-    g.fillRect(0, T - 6, T, 6);
+    g.fillRect(0, T * 0.4, T, T * 0.2);
+    g.lineStyle(1, 0x14161c, 0.6);
+    g.lineBetween(0, T * 0.4, T, T * 0.4);
+    g.lineBetween(0, T * 0.6, T, T * 0.6);
     g.generateTexture("tile_wall", T, T);
+    g.destroy();
+  }
+
+  generateWaterCoolerTexture(T) {
+    const g = this.add.graphics();
+    g.fillStyle(0xd4cdb8, 1);
+    g.fillRect(0, 0, T, T);
+    g.fillStyle(0x000000, 0.2);
+    g.fillEllipse(T / 2, T - 4, T * 0.5, 5);
+    g.fillStyle(0x8fd0ff, 0.75);
+    g.fillRoundedRect(T * 0.3, T * 0.15, T * 0.4, T * 0.4, 3);
+    g.fillStyle(0xe8e8e8, 1);
+    g.fillRect(T * 0.24, T * 0.5, T * 0.52, T * 0.4);
+    g.fillStyle(0x2a2d3a, 1);
+    g.fillRect(T * 0.32, T * 0.58, T * 0.1, T * 0.08);
+    g.generateTexture("tile_watercooler", T, T);
+    g.destroy();
+  }
+
+  generateWallArtTexture(T) {
+    const g = this.add.graphics();
+    g.fillStyle(0xd4cdb8, 1);
+    g.fillRect(0, 0, T, T);
+    g.fillStyle(0x6b4a2f, 1);
+    g.fillRect(T * 0.14, T * 0.16, T * 0.72, T * 0.5);
+    g.fillStyle(0xdff0ff, 1);
+    g.fillRect(T * 0.2, T * 0.22, T * 0.6, T * 0.38);
+    g.fillStyle(0x4a90d9, 0.6);
+    g.fillTriangle(T * 0.22, T * 0.58, T * 0.45, T * 0.3, T * 0.6, T * 0.58);
+    g.fillStyle(0x3f7a3f, 0.6);
+    g.fillTriangle(T * 0.42, T * 0.58, T * 0.6, T * 0.36, T * 0.78, T * 0.58);
+    g.generateTexture("tile_wallart", T, T);
     g.destroy();
   }
 
@@ -100,17 +141,21 @@ class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-  generateEncounterTexture(T) {
+  // Battle objects — the thing you walk up to and hit SPACE on to start a
+  // fight (a stack of red-flagged paperwork), placed inside every
+  // conference room and every former "solid landmark" room.
+  generateBattleObjectTexture(T) {
     const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(T / 2, T - 5, T * 0.6, 5);
+    g.fillStyle(0xd9d2b8, 1);
+    g.fillRect(T * 0.2, T * 0.35, T * 0.6, T * 0.45);
+    g.lineStyle(1, 0xa89968, 1);
+    g.lineBetween(T * 0.2, T * 0.5, T * 0.8, T * 0.5);
+    g.lineBetween(T * 0.2, T * 0.62, T * 0.8, T * 0.62);
     g.fillStyle(0xa63d3d, 1);
-    g.fillRect(0, 0, T, T);
-    g.fillStyle(0xbb5555, 1);
-    for (let y = 4; y < T; y += 8) {
-      for (let x = 4; x < T; x += 8) {
-        g.fillRect(x, y, 2, 2);
-      }
-    }
-    g.generateTexture("tile_encounter", T, T);
+    g.fillTriangle(T * 0.62, T * 0.3, T * 0.78, T * 0.3, T * 0.7, T * 0.14);
+    g.generateTexture("tile_battle_object", T, T);
     g.destroy();
   }
 
@@ -248,6 +293,25 @@ class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
+  generateFlowerBedTexture(T) {
+    const g = this.add.graphics();
+    g.fillStyle(0x5a4530, 1);
+    g.fillRect(0, 0, T, T);
+    g.lineStyle(1, 0x3f3020, 1);
+    g.strokeRect(0, 0, T, T);
+    const BLOOM_COLORS = [0xe0577a, 0xe8c33f, 0xdff0ff, 0xc25a8a];
+    for (let i = 0; i < 6; i++) {
+      const bx = 3 + (i % 3) * (T / 3);
+      const by = 4 + Math.floor(i / 3) * (T / 2.2);
+      g.fillStyle(0x3f7a3f, 1);
+      g.fillCircle(bx + 4, by + 6, 3);
+      g.fillStyle(BLOOM_COLORS[i % BLOOM_COLORS.length], 1);
+      g.fillCircle(bx + 4, by, 3);
+    }
+    g.generateTexture("tile_flowerbed", T, T);
+    g.destroy();
+  }
+
   // Wardrobe: everyone defaults to business casual (collared shirt, tie or
   // blazer trim, slacks). Pass attire "casual" for Visitor Day guests
   // (crew-neck tee, jeans/shorts, no tie). Skin tone, hair, and every trim
@@ -255,8 +319,9 @@ class BootScene extends Phaser.Scene {
   // string hash, reused with different moduli so the picks don't all
   // correlate) so the office floor reads as a crowd of individuals rather
   // than repeated palette-swapped blobs, while staying stable across
-  // reloads since nothing here is Math.random().
-  generateActorTexture(key, T, bodyColor, attire = "business") {
+  // reloads since nothing here is Math.random(). Pass hairColorOverride to
+  // pin a specific character's hair color instead of hashing it.
+  generateActorTexture(key, T, bodyColor, attire = "business", hairColorOverride = null) {
     const w = Math.floor(T * 0.75);
     const h = T;
     const g = this.add.graphics();
@@ -274,7 +339,7 @@ class BootScene extends Phaser.Scene {
     const SKIN_TONES = [0xf0e0c0, 0xd9b88a, 0xb5875a, 0x8a5a35, 0x6b4423];
     const HAIR_COLORS = [0x1a1a1a, 0x3a2a1a, 0x6b4423, 0x8a6a3a, 0xd9c27a, 0x9a9a9a];
     const skin = SKIN_TONES[hash % SKIN_TONES.length];
-    const hairColor = HAIR_COLORS[(hash * 7 + 3) % HAIR_COLORS.length];
+    const hairColor = hairColorOverride !== null ? hairColorOverride : HAIR_COLORS[(hash * 7 + 3) % HAIR_COLORS.length];
     const hairRoll = (hash * 13) % 6; // 0 = bald, else picks a style below
 
     // shadow
