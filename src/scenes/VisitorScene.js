@@ -46,10 +46,12 @@ class VisitorScene extends Phaser.Scene {
       const cy = ((lm.r0 + lm.r1 + 1) / 2) * T;
       this.add
         .text(cx, cy, lm.label, {
-          fontSize: "11px",
+          fontSize: "13px",
           fontFamily: "Courier New",
           color: "#1a1a1a",
           align: "center",
+          stroke: "#ffffff",
+          strokeThickness: 2,
         })
         .setOrigin(0.5);
     });
@@ -57,10 +59,12 @@ class VisitorScene extends Phaser.Scene {
       const rl = site.receptionLabel;
       this.add
         .text(rl.x * T, rl.y * T, rl.text, {
-          fontSize: "11px",
+          fontSize: "13px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
           align: "center",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
     }
@@ -89,9 +93,11 @@ class VisitorScene extends Phaser.Scene {
       this.visitorData.push({ sprite: spr, visitor });
       this.add
         .text(px, py - T * 0.9, `${visitor.name}`, {
-          fontSize: "10px",
+          fontSize: "12px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
     });
@@ -106,10 +112,12 @@ class VisitorScene extends Phaser.Scene {
     );
     this.add
       .text(exitPos.x * T + T / 2, exitPos.y * T + T / 2 - T * 0.9, "EXIT", {
-        fontSize: "11px",
+        fontSize: "13px",
         fontFamily: "Courier New",
         color: "#ffb454",
         align: "center",
+        stroke: "#000000",
+        strokeThickness: 3,
       })
       .setOrigin(0.5);
 
@@ -153,16 +161,19 @@ class VisitorScene extends Phaser.Scene {
       .setScrollFactor(0);
     this.hudText = this.add
       .text(10, 24, "", {
-        fontSize: "11px",
+        fontSize: "12px",
         fontFamily: "Courier New",
         color: "#dff0ff",
       })
       .setScrollFactor(0);
+    // Unbacked — floats over the game world at the bottom of the screen.
     this.add
       .text(4, 460, "Arrows/WASD move  |  SPACE interact", {
-        fontSize: "10px",
+        fontSize: "12px",
         fontFamily: "Courier New",
-        color: "#8f96a8",
+        color: "#c9d2e0",
+        stroke: "#000000",
+        strokeThickness: 3,
       })
       .setScrollFactor(0);
   }
@@ -182,20 +193,20 @@ class VisitorScene extends Phaser.Scene {
       .rectangle(320, 420, 600, 90, 0x14161c, 0.92)
       .setStrokeStyle(2, 0xc25a8a);
     const nameText = this.add.text(40, 385, "", {
-      fontSize: "12px",
+      fontSize: "13px",
       fontFamily: "Courier New",
       color: "#ffe9a8",
     });
     const bodyText = this.add.text(40, 405, "", {
-      fontSize: "12px",
+      fontSize: "13px",
       fontFamily: "Courier New",
       color: "#ffffff",
       wordWrap: { width: 560 },
     });
     const hint = this.add.text(500, 455, "[SPACE]", {
-      fontSize: "10px",
+      fontSize: "11px",
       fontFamily: "Courier New",
-      color: "#8f96a8",
+      color: "#b8c0d0",
     });
     this.dialogueContainer.add([bg, nameText, bodyText, hint]);
     this.dialogueContainer.setVisible(false);

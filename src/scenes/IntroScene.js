@@ -54,9 +54,9 @@ class IntroScene extends Phaser.Scene {
         380,
         "Controls: Arrows/WASD move  ·  SPACE interact/select  ·  H return to cubicle (in the office)",
         {
-          fontSize: "10px",
+          fontSize: "12px",
           fontFamily: "Courier New",
-          color: "#8f96a8",
+          color: "#b8c0d0",
           align: "center",
           wordWrap: { width: 560 },
         }

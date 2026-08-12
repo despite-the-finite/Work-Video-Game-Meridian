@@ -82,12 +82,12 @@ class BattleScene extends Phaser.Scene {
       .rectangle(140, 278, 200, 10, 0x4a90d9)
       .setOrigin(0, 0.5);
     this.playerMpText = this.add.text(140, 288, "", {
-      fontSize: "11px",
+      fontSize: "12px",
       fontFamily: "Courier New",
       color: "#8fd0ff",
     });
-    this.playerBonusText = this.add.text(140, 302, "", {
-      fontSize: "11px",
+    this.playerBonusText = this.add.text(140, 303, "", {
+      fontSize: "12px",
       fontFamily: "Courier New",
       color: "#c9a8e6",
     });

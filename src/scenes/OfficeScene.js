@@ -72,10 +72,12 @@ class OfficeScene extends Phaser.Scene {
       // of overlapping it the way a plain landmark's centered text would.
       this.add
         .text(cx, isStairs ? cy - T * 0.9 : cy, lm.label, {
-          fontSize: "11px",
+          fontSize: "13px",
           fontFamily: "Courier New",
-          color: "#aeb8e0",
+          color: "#c9d2f0",
           align: "center",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
 
@@ -104,10 +106,12 @@ class OfficeScene extends Phaser.Scene {
     (this.floor.roomLabels || []).forEach((rl) => {
       this.add
         .text(rl.x * T, rl.y * T, rl.text, {
-          fontSize: "10px",
+          fontSize: "13px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
           align: "center",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
     });
@@ -156,9 +160,11 @@ class OfficeScene extends Phaser.Scene {
       this.npcData.push({ sprite: spr, coworker: cw, lineIndex: 0 });
       this.add
         .text(px, py - T * 0.9, cw.name, {
-          fontSize: "10px",
+          fontSize: "12px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
     });
@@ -176,10 +182,12 @@ class OfficeScene extends Phaser.Scene {
       this.battleObjectData.push({ sprite: spr, def });
       this.add
         .text(px, py - T * 0.8, def.label, {
-          fontSize: "10px",
+          fontSize: "12px",
           fontFamily: "Courier New",
-          color: "#e08a8a",
+          color: "#ff9d9d",
           align: "center",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
     });
@@ -200,10 +208,12 @@ class OfficeScene extends Phaser.Scene {
       this.homeBaseSprite.setSize(T, T).refreshBody();
       this.add
         .text(hbPx, hbPy - T * 0.9, hb.label, {
-          fontSize: "11px",
+          fontSize: "13px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
           align: "center",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
       this.physics.add.collider(this.player, this.homeBaseGroup);
@@ -274,25 +284,32 @@ class OfficeScene extends Phaser.Scene {
       .setScrollFactor(0);
     this.hudText = this.add
       .text(10, 8, "", {
-        fontSize: "12px",
+        fontSize: "13px",
         fontFamily: "Courier New",
         color: "#dff0ff",
         wordWrap: { width: 220 },
       })
       .setScrollFactor(0);
+    // Floats over the game world in the top-right corner (outside hudBg's
+    // backing panel), so it needs its own stroke for contrast.
     this.floorLabel = this.add
       .text(636, 8, this.floorId, {
-        fontSize: "11px",
+        fontSize: "12px",
         fontFamily: "Courier New",
-        color: "#8f96a8",
+        color: "#c9d2e0",
+        stroke: "#000000",
+        strokeThickness: 3,
       })
       .setOrigin(1, 0)
       .setScrollFactor(0);
+    // Also unbacked (bottom-left, over the game world) — same treatment.
     this.helpText = this.add
       .text(4, 460, "Arrows/WASD move  |  SPACE talk/interact  |  H cubicle", {
-        fontSize: "10px",
+        fontSize: "12px",
         fontFamily: "Courier New",
-        color: "#8f96a8",
+        color: "#c9d2e0",
+        stroke: "#000000",
+        strokeThickness: 3,
       })
       .setScrollFactor(0);
   }
@@ -358,20 +375,20 @@ class OfficeScene extends Phaser.Scene {
       .rectangle(320, 420, 600, 90, 0x14161c, 0.92)
       .setStrokeStyle(2, 0x4a90d9);
     const nameText = this.add.text(40, 385, "", {
-      fontSize: "12px",
+      fontSize: "13px",
       fontFamily: "Courier New",
       color: "#ffe9a8",
     });
     const bodyText = this.add.text(40, 405, "", {
-      fontSize: "12px",
+      fontSize: "13px",
       fontFamily: "Courier New",
       color: "#ffffff",
       wordWrap: { width: 560 },
     });
     const hint = this.add.text(500, 455, "[SPACE]", {
-      fontSize: "10px",
+      fontSize: "11px",
       fontFamily: "Courier New",
-      color: "#8f96a8",
+      color: "#b8c0d0",
     });
     this.dialogueContainer.add([bg, nameText, bodyText, hint]);
     this.dialogueContainer.setVisible(false);
@@ -485,7 +502,7 @@ class OfficeScene extends Phaser.Scene {
     this.modeMenuTexts.forEach((t) => t.destroy());
     this.modeMenuTexts = this.currentMenuOptions.map((opt, i) =>
       this.add.text(200, 190 + i * 22, opt.label, {
-        fontSize: "12px",
+        fontSize: "13px",
         fontFamily: "Courier New",
         color: "#ffffff",
       })
@@ -546,7 +563,7 @@ class OfficeScene extends Phaser.Scene {
     this.stairsMenuTexts.forEach((t) => t.destroy());
     this.stairsMenuTexts = this.currentStairsOptions.map((opt, i) =>
       this.add.text(220, 205 + i * 22, opt.label, {
-        fontSize: "12px",
+        fontSize: "13px",
         fontFamily: "Courier New",
         color: "#ffffff",
       })
@@ -818,9 +835,11 @@ class OfficeScene extends Phaser.Scene {
       this.refreshHud();
       const floatText = this.add
         .text(this.player.x, this.player.y - 20, "+coffee", {
-          fontSize: "10px",
+          fontSize: "12px",
           fontFamily: "Courier New",
           color: "#8fd0ff",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5);
       this.tweens.add({
