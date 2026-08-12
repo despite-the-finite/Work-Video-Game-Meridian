@@ -15,6 +15,12 @@ class TransitionScene extends Phaser.Scene {
   }
 
   create() {
+    // Ambient mode sound (see audio.js) is scheduled with raw setTimeout,
+    // not Phaser's scene-bound timers, so it keeps running across a scene
+    // switch unless stopped explicitly — every non-ambient scene stops it;
+    // Office/SiteVisit/VisitorScene restart their own on the other side.
+    AMBIENT.stop();
+
     this.add.rectangle(320, 240, 640, 480, 0x14161c);
     this.add
       .rectangle(320, 240, 600, 420, 0x1c1e28)

@@ -44,6 +44,7 @@ class BattleScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.stop();
     this.ensureEnemyTexture();
 
     this.add.rectangle(320, 240, 640, 480, 0x1c1e28);

@@ -9,6 +9,7 @@ class VisitorScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.start("visitor");
     const site = VISITOR_DAY;
     const T = site.tileSize;
     this.tileSize = T;

@@ -14,6 +14,7 @@ class PromotionScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.stop();
     const p = PLAYER_STATE;
     const rank = getRankTitle(p.level, p.executiveUnlocked);
 

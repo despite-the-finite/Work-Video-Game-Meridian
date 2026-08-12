@@ -9,6 +9,7 @@ class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.stop(); // in case we landed here via a Game Over restart mid-ambience
     this.drawBlueprint();
     this.drawTitleText();
 

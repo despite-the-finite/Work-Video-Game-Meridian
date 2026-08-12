@@ -20,6 +20,7 @@ class OfficeScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.start("office");
     const T = this.floor.tileSize;
     this.tileSize = T;
     this.grid = this.floor.layout.map((row) => row.split(""));
@@ -341,6 +342,9 @@ class OfficeScene extends Phaser.Scene {
     this.showDialogueLine();
   }
 
+  // Blocks movement and plays beach ambience (see audio.js) until SPACE
+  // dismisses it — a real "you're on the beach for a minute" beat instead
+  // of a banner that just times out on its own underneath normal play.
   applyPtoResult() {
     const p = PLAYER_STATE;
     const cost = 15;
@@ -349,24 +353,44 @@ class OfficeScene extends Phaser.Scene {
     p.mp = p.maxMp;
     p.bonusPotential = Phaser.Math.Clamp(p.bonusPotential - cost, 0, 100);
     this.refreshHud();
+
+    AMBIENT.start("pto");
+    this.ptoActive = true;
+
+    const bg = this.add.rectangle(320, 240, 640, 480, 0x0a3a4a, 0.88).setScrollFactor(0);
     const banner = this.add
       .text(
         320,
-        70,
+        210,
         `Colleen and Indra pulled off a long weekend away. HP/MP fully restored.\nBonus Potential -${before - p.bonusPotential} (now ${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)}).`,
         {
-          fontSize: "11px",
+          fontSize: "13px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
-          backgroundColor: "#14161c",
-          padding: { x: 8, y: 6 },
-          wordWrap: { width: 560 },
           align: "center",
+          wordWrap: { width: 480 },
         }
       )
       .setOrigin(0.5)
       .setScrollFactor(0);
-    this.time.delayedCall(3500, () => banner.destroy());
+    const prompt = this.add
+      .text(320, 280, "[SPACE] head back to the office", {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ffffff",
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+    this.tweens.add({ targets: prompt, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
+
+    this.ptoElements = [bg, banner, prompt];
+  }
+
+  closePto() {
+    this.ptoActive = false;
+    this.ptoElements.forEach((el) => el.destroy());
+    this.ptoElements = null;
+    AMBIENT.start("office");
   }
 
   buildDialogueBox() {
@@ -700,6 +724,15 @@ class OfficeScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    if (this.ptoActive) {
+      this.player.setVelocity(0, 0);
+      this.updateWanderers(delta);
+      if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+        this.closePto();
+      }
+      return;
+    }
+
     if (this.dialogueContainer.visible) {
       this.player.setVelocity(0, 0);
       this.updateWanderers(delta);

@@ -14,6 +14,7 @@ class SiteVisitScene extends Phaser.Scene {
   }
 
   create() {
+    AMBIENT.start("site");
     const T = this.site.tileSize;
     this.tileSize = T;
     this.grid = this.site.layout.map((row) => row.split(""));
