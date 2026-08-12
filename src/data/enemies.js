@@ -95,6 +95,10 @@ const ENEMIES = [
 // EXEC-floor fights — the big wigs. Deliberately much tougher than
 // anything else in the game; you're not meant to win these until you've
 // leveled up considerably past the floor's Director-level access gate.
+// isBoss gives them the "suited executive" portrait (see BattleScene's
+// ensureEnemyTexture) instead of the generic enemy blob, plus the bigger
+// loss penalty. isFinalBoss marks them as one of the four required to
+// become Executive — see BattleScene.onEnemyDefeated.
 const EXEC_ENEMIES = [
   {
     id: "coo_showdown",
@@ -105,12 +109,15 @@ const EXEC_ENEMIES = [
     xp: 30,
     bonusPotential: 12,
     color: 0x2a2d4a,
+    isBoss: true,
+    isFinalBoss: true,
     moves: [
       { name: "Reorg Announcement", dmgMin: 5, dmgMax: 9 },
       { name: "\"Do More With Less\"", dmgMin: 4, dmgMax: 8 },
     ],
     flavorIntro: "Vance Holloway doesn't stand up from his desk. He doesn't need to.",
     winMessage: "Vance actually stands this time. \"Noted. Impressive.\"",
+    loseMessage: "Vance waves you off without looking up. \"Come back when you're ready.\"",
   },
   {
     id: "cfo_showdown",
@@ -121,12 +128,15 @@ const EXEC_ENEMIES = [
     xp: 32,
     bonusPotential: 12,
     color: 0x4a2a3a,
+    isBoss: true,
+    isFinalBoss: true,
     moves: [
       { name: "Budget Clawback", dmgMin: 4, dmgMax: 9 },
       { name: "Line-Item Veto", dmgMin: 5, dmgMax: 8 },
     ],
     flavorIntro: "Odette Fairweather closes the spreadsheet. This is the real audit.",
     winMessage: "Odette almost smiles. \"Your numbers hold up. Rare.\"",
+    loseMessage: "Odette reopens the spreadsheet. \"We're not done. Come back when you are.\"",
   },
   {
     id: "counsel_showdown",
@@ -137,12 +147,15 @@ const EXEC_ENEMIES = [
     xp: 30,
     bonusPotential: 12,
     color: 0x2e3a2a,
+    isBoss: true,
+    isFinalBoss: true,
     moves: [
       { name: "\"Per The Contract\"", dmgMin: 5, dmgMax: 9 },
       { name: "Liability Reassignment", dmgMin: 4, dmgMax: 10 },
     ],
     flavorIntro: "Marcus Windham produces a contract you don't remember signing.",
     winMessage: "Marcus files it away. \"We'll call this precedent, then.\"",
+    loseMessage: "Marcus closes the folder. \"We'll revisit this. Prepare better next time.\"",
   },
   {
     id: "board_review",
@@ -153,11 +166,14 @@ const EXEC_ENEMIES = [
     xp: 45,
     bonusPotential: 20,
     color: 0x1a1a2a,
+    isBoss: true,
+    isFinalBoss: true,
     moves: [
       { name: "Unanimous Vote", dmgMin: 6, dmgMax: 11 },
       { name: "\"Table That Motion\"", dmgMin: 5, dmgMax: 9 },
     ],
     flavorIntro: "Every chair around the table is full. All eyes on you.",
     winMessage: "The Board confers quietly, then nods. That's as good as it gets.",
+    loseMessage: "The Board adjourns without a word. You'll need to request another session.",
   },
 ];

@@ -10,9 +10,10 @@ const RANKS = [
   { minLevel: 12, title: "Executive" },
 ];
 
-// Executive is gated behind executiveUnlocked (beating the Performance
-// Review boss), not level — the fight is the promotion, so it can happen
-// as soon as you reach VP (Lv.9) regardless of how much further XP takes you.
+// Executive is gated behind executiveUnlocked, not level — set once all
+// four EXEC-floor bosses are beaten (see BattleScene.onEnemyDefeated),
+// which can happen any time after reaching Director (Lv.6) and clearing
+// the floor's access gate, regardless of how much further XP takes you.
 function getRank(level, executiveUnlocked) {
   if (executiveUnlocked) {
     return RANKS[RANKS.length - 1];

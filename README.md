@@ -60,9 +60,12 @@ controls legend.
   Engineering Manager → Senior Engineering Manager → Director of
   Engineering → VP of Engineering → **Executive**. Every level up (however
   it's triggered) hands you a brief "note from the executives" congratulating
-  you before you're back on the floor. Executive itself is gated behind a
-  scripted boss fight (a "Performance Review" against the Regional Director,
-  in the La Plata conference room).
+  you before you're back on the floor. Executive itself isn't unlocked by
+  leveling — it's earned on the EXEC floor: a scripted "Performance Review"
+  boss fight against the Regional Director (La Plata conference room, GFS,
+  available at VP) confirms you're ready, then you have to beat all four
+  EXEC-floor bosses (the COO, the CFO, General Counsel, and the Board) to
+  actually win the promotion — and the game.
 - **Bonus Potential** — a reputation score starting at 20, with flavor labels
   from "Not Bonus Eligible" to "Stock Options Mentioned Once." Maxing it out
   at 100 rolls over and queues a level up, same as XP overflow — but neither

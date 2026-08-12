@@ -19,11 +19,19 @@ function initialPlayerState() {
     // apply until a site-visit change order is approved, so leveling needs
     // progress in both the office and on-site, not either alone.
     levelUpPending: false,
-    visitorGreeted: { wife: false, daughter: false, parents: false },
+    visitorGreeted: { wife: false, daughter: false, parents: false, brother: false },
     wellFedBattles: 0,
     // Keyed by SITE_VISITS id, set true once that site's client negotiation
     // is won (see BattleScene). Other sites use unlockedBy to gate on this.
     completedSites: {},
+    // Beating Reginald Cho (the Performance Review boss, GFS floor, VP+)
+    // no longer grants Executive by itself — it just confirms you're ready
+    // for the EXEC floor. See BattleScene.onEnemyDefeated / OfficeScene's
+    // resolveDialogueLines for reginald_cho's dialogue gating.
+    reginaldDefeated: false,
+    // Executive — and winning the game — requires beating all four EXEC
+    // floor bosses (see EXEC_ENEMIES in enemies.js), not just one fight.
+    execBossesDefeated: { coo_showdown: false, cfo_showdown: false, counsel_showdown: false, board_review: false },
   };
 }
 

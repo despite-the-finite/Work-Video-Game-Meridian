@@ -516,14 +516,35 @@ class BattleScene extends Phaser.Scene {
     }
 
     this.leveledUpThisFight = false;
+    this.gameWon = false;
     let msg;
-    if (this.isBoss) {
-      p.executiveUnlocked = true;
+    if (this.enemy.isFinalBoss) {
+      // One of the four EXEC-floor bosses — Executive (and winning the
+      // game) requires beating all four, not just this one.
+      p.execBossesDefeated[this.enemy.id] = true;
+      const remaining = Object.values(p.execBossesDefeated).filter((v) => !v).length;
+      msg = `${this.enemy.winMessage || `${this.enemy.name} concedes.`}`;
+      msg += `\n${applyBonusPotential(this.enemy.bonusPotential || 12)}`;
+      if (remaining === 0) {
+        p.executiveUnlocked = true;
+        p.hp = p.maxHp;
+        p.mp = p.maxMp;
+        msg += `\n\nEvery leader on this floor has signed off. PROMOTED! You are now Executive.`;
+        this.leveledUpThisFight = true;
+        this.gameWon = true;
+      } else {
+        msg += `\n${remaining} more EXEC leader${remaining === 1 ? "" : "s"} to beat before you're Executive.`;
+      }
+    } else if (this.isBoss) {
+      // Reginald Cho's Performance Review — a VP-level checkpoint, not the
+      // promotion itself anymore. It confirms you're ready for the EXEC
+      // floor's four bosses (see isFinalBoss above), which is what actually
+      // makes you Executive.
+      p.reginaldDefeated = true;
       p.hp = p.maxHp;
       p.mp = p.maxMp;
-      msg = `${this.enemy.winMessage || `${this.enemy.name} concedes.`}\nPROMOTED! You are now Executive.`;
+      msg = `${this.enemy.winMessage || `${this.enemy.name} concedes.`}\nYou've earned your shot at the top floor — four EXEC leaders are waiting.`;
       msg += `\n${applyBonusPotential(15)}`;
-      this.leveledUpThisFight = true;
     } else if (this.isClientNegotiation) {
       if (this.completesSiteId) p.completedSites[this.completesSiteId] = true;
       msg = `${this.enemy.winMessage || `${this.enemy.name} backs down.`} +${this.enemy.xp} XP.`;
@@ -621,7 +642,7 @@ class BattleScene extends Phaser.Scene {
   returnToOffice() {
     const nextPayload = this.returnSiteId ? { siteId: this.returnSiteId } : {};
     if (this.leveledUpThisFight) {
-      this.scene.start("PromotionScene", { nextScene: this.returnScene, nextPayload });
+      this.scene.start("PromotionScene", { nextScene: this.returnScene, nextPayload, isGameWin: this.gameWon });
     } else {
       this.scene.start(this.returnScene, nextPayload);
     }

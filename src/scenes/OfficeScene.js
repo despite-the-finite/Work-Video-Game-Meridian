@@ -408,7 +408,10 @@ class OfficeScene extends Phaser.Scene {
     const cw = npc.coworker;
     npc.readyForBoss = false;
     if (cw.isBoss) {
-      if (PLAYER_STATE.executiveUnlocked) {
+      // reginaldDefeated, not executiveUnlocked — beating him no longer
+      // grants Executive by itself (see BattleScene.onEnemyDefeated); it
+      // just confirms you're past this checkpoint.
+      if (PLAYER_STATE.reginaldDefeated) {
         return cw.dialogueCleared || cw.dialogue;
       }
       if (PLAYER_STATE.level >= 9) {
