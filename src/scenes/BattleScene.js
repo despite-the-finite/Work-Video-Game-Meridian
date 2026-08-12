@@ -253,6 +253,38 @@ class BattleScene extends Phaser.Scene {
       return;
     }
 
+    if (this.enemy.id === "reply_all") {
+      const w = 96;
+      const h = 96;
+      const g = this.add.graphics();
+      g.fillStyle(0x000000, 0.25);
+      g.fillEllipse(w / 2, h - 8, w * 0.7, 10);
+      // envelope body
+      g.fillStyle(this.enemy.color, 1);
+      g.fillRect(w * 0.1, h * 0.28, w * 0.8, h * 0.5);
+      g.lineStyle(2, 0xdff0ff, 0.85);
+      g.strokeRect(w * 0.1, h * 0.28, w * 0.8, h * 0.5);
+      // open flap, drawn as two folded-back triangles
+      g.fillStyle(0x1c3a52, 1);
+      g.fillTriangle(w * 0.1, h * 0.28, w * 0.5, h * 0.55, w * 0.1, h * 0.78);
+      g.fillTriangle(w * 0.9, h * 0.28, w * 0.5, h * 0.55, w * 0.9, h * 0.78);
+      g.lineStyle(2, 0xdff0ff, 0.85);
+      g.lineBetween(w * 0.1, h * 0.28, w * 0.5, h * 0.55);
+      g.lineBetween(w * 0.9, h * 0.28, w * 0.5, h * 0.55);
+      // a flurry of tiny reply arrows to sell "storm"
+      g.fillStyle(0xdff0ff, 0.9);
+      [
+        [w * 0.24, h * 0.16],
+        [w * 0.5, h * 0.1],
+        [w * 0.76, h * 0.16],
+      ].forEach(([ax, ay]) => {
+        g.fillTriangle(ax - 4, ay + 5, ax + 4, ay + 5, ax, ay - 3);
+      });
+      g.generateTexture(key, w, h);
+      g.destroy();
+      return;
+    }
+
     const w = 96;
     const h = 96;
     const g = this.add.graphics();
