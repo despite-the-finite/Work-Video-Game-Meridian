@@ -53,3 +53,9 @@ const config = {
 };
 
 new Phaser.Game(config);
+
+// Reaching this line means every script above loaded and ran without
+// throwing, so the boot-status placeholder (see index.html) has done its
+// job — clear it so the game canvas shows through.
+const bootStatus = document.getElementById("boot-status");
+if (bootStatus) bootStatus.remove();

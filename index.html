@@ -18,10 +18,45 @@
     box-shadow: 0 0 0 4px #2a2d3a, 0 0 40px rgba(0,0,0,0.6);
     cursor: none;
   }
+  #boot-status {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffe9a8;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #boot-status.error {
+    color: #ff8a8a;
+    font-size: 13px;
+    white-space: pre-wrap;
+    align-items: flex-start;
+    text-align: left;
+  }
 </style>
 </head>
 <body>
 <div id="game-container"></div>
+
+<!-- Plain HTML/CSS, no dependency on any script below — shows immediately,
+     and stays up (with the real error, if there was one) if anything below
+     fails to load or throws, instead of a silent blank page. main.js
+     removes this once the game actually starts. -->
+<div id="boot-status">Loading...</div>
+<script>
+  window.addEventListener("error", function (e) {
+    const el = document.getElementById("boot-status");
+    if (!el) return;
+    el.className = "error";
+    el.textContent =
+      "Failed to load: " + (e.message || "unknown error") +
+      (e.filename ? "\n" + e.filename + ":" + e.lineno : "");
+  });
+</script>
 
 <!-- Phaser, vendored locally (src/vendor/phaser.min.js) so the game works
      offline / with no internet access — no CDN dependency. -->
