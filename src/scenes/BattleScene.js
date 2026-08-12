@@ -19,10 +19,15 @@ class BattleScene extends Phaser.Scene {
     this.enemy.maxHp = this.enemy.hp;
     this.isBoss = !!(data.isBoss || template.isBoss);
     this.isClientNegotiation = !!template.isClientNegotiation;
+    // Fixed 6 slots, 2 columns x 3 rows — handleChoice() switches on index,
+    // so a template overriding menuLabels (see clients.js) must keep this
+    // exact order, just reskin the text.
     this.menuOptions = template.menuLabels || [
       "Attack",
       "Overtime Push (5 MP)",
+      "Special Attack (8 MP)",
       "Guard",
+      "Dodge",
       "Flee",
     ];
     this.returnScene = data.returnScene || "OfficeScene";
@@ -30,6 +35,7 @@ class BattleScene extends Phaser.Scene {
     this.completesSiteId = data.completesSiteId || null;
     this.selectedIndex = 0;
     this.playerGuarding = false;
+    this.playerDodging = false;
     this.battleOver = false;
     this.awaitingAdvance = false;
     this.playerLost = false;
@@ -395,6 +401,7 @@ class BattleScene extends Phaser.Scene {
 
   handleChoice(idx) {
     this.playerGuarding = false;
+    this.playerDodging = false;
     const p = PLAYER_STATE;
     const atk = this.effectiveAtk();
 
@@ -412,9 +419,28 @@ class BattleScene extends Phaser.Scene {
         this.pendingMessage = `Not enough MP. You mutter something about work-life balance.`;
       }
     } else if (idx === 2) {
+      // Costlier and hits harder than Overtime Push, and cuts through half
+      // the enemy's defense — the "I'm pulling out the big deck" move.
+      if (p.mp >= 8) {
+        p.mp -= 8;
+        const dmg = Math.max(
+          3,
+          Math.floor(atk * 2.6) - Math.floor(this.enemy.def / 2) + Phaser.Math.Between(0, 4)
+        );
+        this.enemy.hp -= dmg;
+        this.pendingMessage = `SPECIAL ATTACK! You pull out every stat in the deck. ${this.enemy.name} takes ${dmg} damage.`;
+      } else {
+        this.pendingMessage = `Not enough MP for that. You mutter something about work-life balance.`;
+      }
+    } else if (idx === 3) {
       this.playerGuarding = true;
       this.pendingMessage = `You brace for impact and look extremely busy.`;
-    } else if (idx === 3) {
+    } else if (idx === 4) {
+      // Guard reliably halves damage; Dodge gambles on avoiding it
+      // entirely — a coin flip, resolved when the enemy's attack lands.
+      this.playerDodging = true;
+      this.pendingMessage = `You sidestep, ready to dodge whatever's coming.`;
+    } else if (idx === 5) {
       if (Phaser.Math.Between(1, 100) <= 60) {
         this.pendingMessage = `You slip out to "take a call" and escape the fight.`;
         this.consumeWellFed();
@@ -457,10 +483,18 @@ class BattleScene extends Phaser.Scene {
     const move = Phaser.Utils.Array.GetRandom(this.enemy.moves);
     let dmg = Phaser.Math.Between(move.dmgMin, move.dmgMax) + this.enemy.atk - p.def;
     dmg = Math.max(1, dmg);
-    if (this.playerGuarding) dmg = Math.ceil(dmg / 2);
+
+    let logMsg;
+    if (this.playerDodging && Phaser.Math.Between(1, 100) <= 50) {
+      dmg = 0;
+      logMsg = `${this.enemy.name} uses ${move.name}! You dodge it completely.`;
+    } else {
+      if (this.playerGuarding) dmg = Math.ceil(dmg / 2);
+      logMsg = `${this.enemy.name} uses ${move.name}! You take ${dmg} damage.`;
+    }
 
     p.hp -= dmg;
-    this.setLog(`${this.enemy.name} uses ${move.name}! You take ${dmg} damage.`);
+    this.setLog(logMsg);
     this.refreshBars();
 
     if (p.hp <= 0) {

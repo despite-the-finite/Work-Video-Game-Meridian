@@ -1,7 +1,8 @@
 // Client negotiation encounters — the closing beat of a site visit. Reuses
-// the BattleScene engine (same 4-slot menu mechanic as Attack/Skill/Guard/
-// Flee) but re-skinned: "HP" represents how entrenched the client is in
-// their unreasonable ask. Deplete it to get the change order approved.
+// the BattleScene engine (same 6-slot menu mechanic as Attack/Overtime Push/
+// Special Attack/Guard/Dodge/Flee) but re-skinned: "HP" represents how
+// entrenched the client is in their unreasonable ask. Deplete it to get
+// the change order approved.
 
 const CLIENTS = [
   {
@@ -13,7 +14,14 @@ const CLIENTS = [
     xp: 30,
     color: 0xb5942e,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "\"Can We Just Add This Real Quick\"", dmgMin: 4, dmgMax: 8 },
       { name: "\"It's Basically the Same Scope\"", dmgMin: 4, dmgMax: 7 },
@@ -35,7 +43,14 @@ const CLIENTS = [
     xp: 32,
     color: 0xc9a83a,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "\"Line Can't Stop For This\"", dmgMin: 4, dmgMax: 8 },
       { name: "Recall Threat", dmgMin: 5, dmgMax: 8 },
@@ -55,7 +70,14 @@ const CLIENTS = [
     xp: 33,
     color: 0xe8c33f,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "Outage Window Threat", dmgMin: 4, dmgMax: 9 },
       { name: "Reliability Metrics", dmgMin: 5, dmgMax: 8 },
@@ -75,7 +97,14 @@ const CLIENTS = [
     xp: 34,
     color: 0x8a4a2e,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "Turnaround Deadline", dmgMin: 5, dmgMax: 9 },
       { name: "Process Safety Citation", dmgMin: 5, dmgMax: 8 },
@@ -95,7 +124,14 @@ const CLIENTS = [
     xp: 31,
     color: 0xd97b2e,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "Public Complaint Log", dmgMin: 4, dmgMax: 8 },
       { name: "Lane Closure Penalty", dmgMin: 5, dmgMax: 8 },
@@ -115,7 +151,14 @@ const CLIENTS = [
     xp: 32,
     color: 0x9ad9c2,
     isClientNegotiation: true,
-    menuLabels: ["Push Back", "Propose Change Order (5 MP)", "Reassure", "Concede"],
+    menuLabels: [
+      "Push Back",
+      "Propose Change Order (5 MP)",
+      "Cite the Contract (8 MP)",
+      "Reassure",
+      "Redirect the Question",
+      "Concede",
+    ],
     moves: [
       { name: "Compliance Deadline", dmgMin: 4, dmgMax: 8 },
       { name: "\"The Water Doesn't Wait\"", dmgMin: 5, dmgMax: 8 },
