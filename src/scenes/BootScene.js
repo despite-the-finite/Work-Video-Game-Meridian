@@ -13,6 +13,12 @@ class BootScene extends Phaser.Scene {
 
     this.generateFloorTexture(T);
     this.generateWallTexture(T);
+    // Per-floor palettes so CDB and EXEC read as distinct places, not just
+    // a label — see FLOORS[x].theme in floorplan.js.
+    this.generateFloorTexture(T, "cdb", 0xc7cdd6, 0xb3bac4);
+    this.generateWallTexture(T, "cdb", 0xc7cdd6, 0x2e3a4a);
+    this.generateFloorTexture(T, "exec", 0xb89968, 0xa4855a);
+    this.generateWallTexture(T, "exec", 0xb89968, 0x3a2418);
     this.generateDeskTexture(T);
     this.generatePlantTexture(T);
     this.generateBattleObjectTexture(T);
@@ -55,29 +61,54 @@ class BootScene extends Phaser.Scene {
     this.scene.start("OfficeScene");
   }
 
-  generateFloorTexture(T) {
+  // theme "" (default/GFS) writes to "tile_floor"; a theme name writes to
+  // "tile_floor_<theme>" so each floor can look distinct (see
+  // FLOORS[x].theme in floorplan.js and the matching lookup in OfficeScene).
+  generateFloorTexture(T, theme = "", floorColor = 0xd4cdb8, lineColor = 0xc2bba6) {
+    const key = theme ? `tile_floor_${theme}` : "tile_floor";
     const g = this.add.graphics();
-    g.fillStyle(0xd4cdb8, 1);
+    g.fillStyle(floorColor, 1);
     g.fillRect(0, 0, T, T);
-    g.lineStyle(1, 0xc2bba6, 0.7);
+    g.lineStyle(1, lineColor, 0.7);
     g.strokeRect(0, 0, T, T);
-    g.generateTexture("tile_floor", T, T);
+    g.generateTexture(key, T, T);
     g.destroy();
   }
 
-  // Thin architectural wall line on a floor-toned backdrop, rather than a
+  // Thin architectural wall lines on a floor-toned backdrop, rather than a
   // solid opaque block — reads like a floor-plan wall symbol even though
-  // the whole tile is still solid for collision.
-  generateWallTexture(T) {
-    const g = this.add.graphics();
-    g.fillStyle(0xd4cdb8, 1);
-    g.fillRect(0, 0, T, T);
-    g.fillStyle(0x2a2d3a, 1);
-    g.fillRect(0, T * 0.4, T, T * 0.2);
-    g.lineStyle(1, 0x14161c, 0.6);
-    g.lineBetween(0, T * 0.4, T, T * 0.4);
-    g.lineBetween(0, T * 0.6, T, T * 0.6);
-    g.generateTexture("tile_wall", T, T);
+  // the whole tile is still solid for collision. Three orientations so a
+  // run of wall tiles draws as one continuous line instead of a stack of
+  // disconnected dashes: OfficeScene picks the variant per-tile based on
+  // which neighbors are also walls (see wallTextureKey there).
+  generateWallTexture(T, theme = "", floorColor = 0xd4cdb8, wallColor = 0x2a2d3a) {
+    const suffix = theme ? `_${theme}` : "";
+    const band = (isH, isV) => {
+      const g = this.add.graphics();
+      g.fillStyle(floorColor, 1);
+      g.fillRect(0, 0, T, T);
+      g.fillStyle(wallColor, 1);
+      if (isH) g.fillRect(0, T * 0.4, T, T * 0.2);
+      if (isV) g.fillRect(T * 0.4, 0, T * 0.2, T);
+      g.lineStyle(1, this.darken(wallColor, 0.5), 0.6);
+      if (isH) {
+        g.lineBetween(0, T * 0.4, T, T * 0.4);
+        g.lineBetween(0, T * 0.6, T, T * 0.6);
+      }
+      if (isV) {
+        g.lineBetween(T * 0.4, 0, T * 0.4, T);
+        g.lineBetween(T * 0.6, 0, T * 0.6, T);
+      }
+      return g;
+    };
+    let g = band(true, false);
+    g.generateTexture(`tile_wall${suffix}_h`, T, T);
+    g.destroy();
+    g = band(false, true);
+    g.generateTexture(`tile_wall${suffix}_v`, T, T);
+    g.destroy();
+    g = band(true, true);
+    g.generateTexture(`tile_wall${suffix}_x`, T, T);
     g.destroy();
   }
 
@@ -117,12 +148,29 @@ class BootScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0xc9c2a6, 1);
     g.fillRect(0, 0, T, T);
+    // desktop surface + a visible front edge for depth
     g.fillStyle(0x6b4a2f, 1);
     g.fillRect(2, 10, T - 4, T - 14);
+    g.fillStyle(0x5a3d26, 1);
+    g.fillRect(2, T - 6, T - 4, 3);
+    // monitor: bezel, screen, small stand
     g.fillStyle(0x2a2d3a, 1);
     g.fillRect(6, 4, T - 12, 10);
+    g.fillRect(T / 2 - 2, 2, 4, 3);
     g.fillStyle(0x4a90d9, 1);
     g.fillRect(8, 6, T - 16, 6);
+    g.fillStyle(0x8fd0ff, 0.5);
+    g.fillRect(8, 6, T - 16, 2);
+    // keyboard
+    g.fillStyle(0x3c3f4c, 1);
+    g.fillRect(9, 16, T - 18, 4);
+    g.fillStyle(0x555a6a, 1);
+    for (let kx = 10; kx < T - 10; kx += 3) g.fillRect(kx, 17, 2, 2);
+    // pen cup + mouse for a bit of clutter
+    g.fillStyle(0x8a3a3a, 1);
+    g.fillRect(T - 9, 12, 4, 6);
+    g.fillStyle(0x2a2d3a, 1);
+    g.fillRect(6, 21, 3, 4);
     g.generateTexture("tile_desk", T, T);
     g.destroy();
   }
@@ -190,10 +238,21 @@ class BootScene extends Phaser.Scene {
     g.fillRect(0, 0, T, T);
     g.fillStyle(0x6b4a2f, 1);
     g.fillRect(2, 10, T - 4, T - 14);
+    g.fillStyle(0x5a3d26, 1);
+    g.fillRect(2, T - 6, T - 4, 3);
     g.fillStyle(0x4a90d9, 1);
     g.fillRect(4, 2, T - 8, 10);
     g.fillStyle(0xdff0ff, 0.85);
     g.fillRect(6, 4, T - 12, 6);
+    // a small photo frame and a plant, personalizing the cubicle
+    g.fillStyle(0x8a6d3b, 1);
+    g.fillRect(T - 10, 12, 6, 5);
+    g.fillStyle(0xdff0ff, 0.7);
+    g.fillRect(T - 9, 13, 4, 3);
+    g.fillStyle(0x3f7a3f, 1);
+    g.fillCircle(6, T - 8, 3);
+    g.fillStyle(0x6b4a2f, 1);
+    g.fillRect(5, T - 6, 2, 3);
     g.lineStyle(2, 0xffe9a8, 1);
     g.strokeRect(1, 1, T - 2, T - 2);
     g.generateTexture("tile_cubicle", T, T);
@@ -345,6 +404,14 @@ class BootScene extends Phaser.Scene {
     // shadow
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(w / 2, h - 4, w * 0.7, 6);
+
+    // arms, drawn behind the body so only the sleeve edges peek out
+    g.fillStyle(this.darken(bodyColor, 0.85), 1);
+    g.fillRoundedRect(bodyX - bodyW * 0.12, bodyY + bodyH * 0.08, bodyW * 0.18, bodyH * 0.62, 2);
+    g.fillRoundedRect(bodyX + bodyW * 0.94, bodyY + bodyH * 0.08, bodyW * 0.18, bodyH * 0.62, 2);
+    g.fillStyle(skin, 1);
+    g.fillCircle(bodyX - bodyW * 0.03, bodyY + bodyH * 0.68, bodyW * 0.09);
+    g.fillCircle(bodyX + bodyW * 1.03, bodyY + bodyH * 0.68, bodyW * 0.09);
 
     // body (shirt/blouse/tee)
     g.fillStyle(bodyColor, 1);

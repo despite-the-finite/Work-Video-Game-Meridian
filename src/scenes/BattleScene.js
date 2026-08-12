@@ -7,7 +7,7 @@ class BattleScene extends Phaser.Scene {
   }
 
   init(data) {
-    const pools = [ENEMIES, BOSSES, CLIENTS, SITE_HAZARDS];
+    const pools = [ENEMIES, EXEC_ENEMIES, BOSSES, CLIENTS, SITE_HAZARDS];
     let template = null;
     for (const pool of pools) {
       template = pool.find((e) => e.id === data.enemyId);
@@ -27,6 +27,7 @@ class BattleScene extends Phaser.Scene {
     ];
     this.returnScene = data.returnScene || "OfficeScene";
     this.returnSiteId = data.returnSiteId || null;
+    this.completesSiteId = data.completesSiteId || null;
     this.selectedIndex = 0;
     this.playerGuarding = false;
     this.battleOver = false;
@@ -314,6 +315,7 @@ class BattleScene extends Phaser.Scene {
       p.levelUpPending = true;
     }
 
+    this.leveledUpThisFight = false;
     let msg;
     if (this.isBoss) {
       p.executiveUnlocked = true;
@@ -321,7 +323,9 @@ class BattleScene extends Phaser.Scene {
       p.mp = p.maxMp;
       msg = `${this.enemy.winMessage || `${this.enemy.name} concedes.`}\nPROMOTED! You are now Executive.`;
       msg += `\n${applyBonusPotential(15)}`;
+      this.leveledUpThisFight = true;
     } else if (this.isClientNegotiation) {
+      if (this.completesSiteId) p.completedSites[this.completesSiteId] = true;
       msg = `${this.enemy.winMessage || `${this.enemy.name} backs down.`} +${this.enemy.xp} XP.`;
       msg += `\n${applyBonusPotential(8)}`;
       if (p.levelUpPending) {
@@ -332,6 +336,7 @@ class BattleScene extends Phaser.Scene {
           rankAfter !== rankBefore
             ? `\nChange order approved — PROMOTED! You are now ${rankAfter}.`
             : `\nChange order approved — LEVEL UP! You are now Lv.${p.level}.`;
+        this.leveledUpThisFight = true;
       }
     } else {
       msg = `${this.enemy.winMessage ? this.enemy.winMessage + " " : `${this.enemy.name} has been resolved. `}+${this.enemy.xp} XP.`;
@@ -369,10 +374,11 @@ class BattleScene extends Phaser.Scene {
   }
 
   returnToOffice() {
-    if (this.returnSiteId) {
-      this.scene.start(this.returnScene, { siteId: this.returnSiteId });
+    const nextPayload = this.returnSiteId ? { siteId: this.returnSiteId } : {};
+    if (this.leveledUpThisFight) {
+      this.scene.start("PromotionScene", { nextScene: this.returnScene, nextPayload });
     } else {
-      this.scene.start(this.returnScene);
+      this.scene.start(this.returnScene, nextPayload);
     }
   }
 }

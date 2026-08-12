@@ -251,4 +251,67 @@ const COWORKERS = {
       "Let's see whose numbers actually hold up this quarter.",
     ],
   },
+
+  // EXEC floor — the big wigs and the secretaries who actually run their
+  // schedules. Nobody here talks to you until you're a Director.
+  vance_holloway: {
+    name: "Vance Holloway",
+    title: "Chief Operating Officer",
+    portraitColor: 0x2a2d4a,
+    triggersBattle: true,
+    battleEnemyId: "coo_showdown",
+    dialogue: [
+      "You made it up here. Let's see if you belong.",
+      "I don't do small talk. I do performance reviews.",
+    ],
+  },
+  odette_fairweather: {
+    name: "Odette Fairweather",
+    title: "Chief Financial Officer",
+    portraitColor: 0x4a2a3a,
+    triggersBattle: true,
+    battleEnemyId: "cfo_showdown",
+    dialogue: [
+      "Every dollar in this building answers to me eventually.",
+      "Including, soon, whatever you think your budget is.",
+    ],
+  },
+  marcus_windham: {
+    name: "Marcus Windham",
+    title: "General Counsel",
+    portraitColor: 0x2e3a2a,
+    triggersBattle: true,
+    battleEnemyId: "counsel_showdown",
+    dialogue: [
+      "I've read your file. All of it. Twice.",
+      "Let's find out if you can argue as well as you build.",
+    ],
+  },
+  priscilla_wynn: {
+    name: "Priscilla Wynn",
+    title: "Secretary to the COO",
+    portraitColor: 0x8a6d3b,
+    dialogue: [
+      "He'll see you when he sees you. Take a seat.",
+      "Don't touch his coffee. I mean it.",
+    ],
+  },
+  desmond_cole: {
+    name: "Desmond Cole",
+    title: "Secretary to the CFO",
+    portraitColor: 0x3a6b8a,
+    dialogue: [
+      "Her calendar is a war crime. I keep it running anyway.",
+      "You didn't hear this from me, but bring good numbers.",
+    ],
+  },
+  yui_tanaka: {
+    name: "Yui Tanaka",
+    title: "Secretary to General Counsel",
+    portraitColor: 0x6b3a8a,
+    dialogue: [
+      "He reads everything. Everything. Don't exaggerate on your forms.",
+      "Good luck in there. You'll want it.",
+    ],
+  },
 };

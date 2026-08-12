@@ -91,3 +91,73 @@ const ENEMIES = [
     winMessage: "Deja tips her head. \"Not bad. Rematch next quarter.\"",
   },
 ];
+
+// EXEC-floor fights — the big wigs. Deliberately much tougher than
+// anything else in the game; you're not meant to win these until you've
+// leveled up considerably past the floor's Director-level access gate.
+const EXEC_ENEMIES = [
+  {
+    id: "coo_showdown",
+    name: "Vance Holloway, COO",
+    hp: 46,
+    atk: 8,
+    def: 4,
+    xp: 30,
+    bonusPotential: 12,
+    color: 0x2a2d4a,
+    moves: [
+      { name: "Reorg Announcement", dmgMin: 5, dmgMax: 9 },
+      { name: "\"Do More With Less\"", dmgMin: 4, dmgMax: 8 },
+    ],
+    flavorIntro: "Vance Holloway doesn't stand up from his desk. He doesn't need to.",
+    winMessage: "Vance actually stands this time. \"Noted. Impressive.\"",
+  },
+  {
+    id: "cfo_showdown",
+    name: "Odette Fairweather, CFO",
+    hp: 50,
+    atk: 7,
+    def: 5,
+    xp: 32,
+    bonusPotential: 12,
+    color: 0x4a2a3a,
+    moves: [
+      { name: "Budget Clawback", dmgMin: 4, dmgMax: 9 },
+      { name: "Line-Item Veto", dmgMin: 5, dmgMax: 8 },
+    ],
+    flavorIntro: "Odette Fairweather closes the spreadsheet. This is the real audit.",
+    winMessage: "Odette almost smiles. \"Your numbers hold up. Rare.\"",
+  },
+  {
+    id: "counsel_showdown",
+    name: "Marcus Windham, Counsel",
+    hp: 44,
+    atk: 9,
+    def: 3,
+    xp: 30,
+    bonusPotential: 12,
+    color: 0x2e3a2a,
+    moves: [
+      { name: "\"Per The Contract\"", dmgMin: 5, dmgMax: 9 },
+      { name: "Liability Reassignment", dmgMin: 4, dmgMax: 10 },
+    ],
+    flavorIntro: "Marcus Windham produces a contract you don't remember signing.",
+    winMessage: "Marcus files it away. \"We'll call this precedent, then.\"",
+  },
+  {
+    id: "board_review",
+    name: "The Board",
+    hp: 65,
+    atk: 10,
+    def: 6,
+    xp: 45,
+    bonusPotential: 20,
+    color: 0x1a1a2a,
+    moves: [
+      { name: "Unanimous Vote", dmgMin: 6, dmgMax: 11 },
+      { name: "\"Table That Motion\"", dmgMin: 5, dmgMax: 9 },
+    ],
+    flavorIntro: "Every chair around the table is full. All eyes on you.",
+    winMessage: "The Board confers quietly, then nods. That's as good as it gets.",
+  },
+];

@@ -164,13 +164,9 @@ const FLOORS = {
       label: "YOUR CUBICLE",
       options: [
         { label: "Work the Office Floor", action: "close" },
-        {
-          label: "Site Visit: Meridian Ph.2",
-          action: "travel",
-          sceneKey: "SiteVisitScene",
-          payload: { siteId: "meridian_phase2" },
-          transitionMessage: "Travelling to Site...",
-        },
+        // Expanded at menu-open time into one entry per unlocked
+        // SITE_VISITS id — see OfficeScene.buildSiteVisitOptions().
+        { action: "site_visit_list" },
         {
           label: "Visitor Day",
           action: "travel",
@@ -186,21 +182,32 @@ const FLOORS = {
       ],
     },
 
-    // Stairs to the other floor.
-    stairs: {
-      x: 33,
-      y: 9,
-      label: "STAIRS TO CDB",
-      toFloor: "CDB",
-      arriveAt: { x: 22, y: 12 },
-      transitionMessage: "Taking the stairs to CDB...",
-    },
+    // Stairs to the other floors.
+    stairs: [
+      {
+        x: 33,
+        y: 9,
+        label: "STAIRS TO CDB",
+        toFloor: "CDB",
+        arriveAt: { x: 22, y: 12 },
+        transitionMessage: "Taking the stairs to CDB...",
+      },
+      {
+        x: 38,
+        y: 9,
+        label: "STAIRS TO EXEC",
+        toFloor: "EXEC",
+        arriveAt: { x: 20, y: 6 },
+        transitionMessage: "Taking the stairs to EXEC...",
+      },
+    ],
   },
 
   CDB: {
     tileSize: 32,
     width: 42,
     height: 16,
+    theme: "cdb",
     layout: [
       "111111111111111111111111111111111111111",
       "122002200220022011111111102200220022002",
@@ -244,13 +251,79 @@ const FLOORS = {
 
     // No home base here — mode selection lives on GFS, at the player's
     // own desk. This floor is just somewhere else to work and fight.
-    stairs: {
-      x: 20,
-      y: 12,
-      label: "STAIRS TO GFS",
-      toFloor: "GFS",
-      arriveAt: { x: 34, y: 9 },
-      transitionMessage: "Taking the stairs to GFS...",
+    stairs: [
+      {
+        x: 20,
+        y: 12,
+        label: "STAIRS TO GFS",
+        toFloor: "GFS",
+        arriveAt: { x: 34, y: 9 },
+        transitionMessage: "Taking the stairs to GFS...",
+      },
+    ],
+  },
+
+  EXEC: {
+    tileSize: 32,
+    width: 41,
+    height: 8,
+    theme: "exec",
+    // Matches GFS's EXEC stairs arriveAt — only used as a fallback if this
+    // floor is ever entered without going through the stairs.
+    playerStart: { x: 20, y: 6 },
+    layout: [
+      "11111111111111111111111111111111111111111",
+      "11111111110111111111011111111101111111111",
+      "11000000010100000001010000000101000000011",
+      "11000000010100000001010000000101000000011",
+      "11110011110111001111011100111101110011111",
+      "10000000000000000000000000000000000000001",
+      "10000000000000000000000000000000000000001",
+      "11111111111111111111111111111111111111111",
+    ],
+
+    landmarks: [],
+
+    roomLabels: [
+      { x: 5, y: 0.5, text: "COO OFFICE" },
+      { x: 15, y: 0.5, text: "CFO OFFICE" },
+      { x: 25, y: 0.5, text: "COUNSEL OFFICE" },
+      { x: 35, y: 0.5, text: "BOARDROOM" },
+    ],
+
+    // No random enemies up here — the three executives trigger a fight
+    // via dialogue (see coworkers.js triggersBattle); the boardroom is the
+    // only battle object, since nobody "is" the board individually.
+    battleObjects: [{ x: 35, y: 2, label: "The Boardroom Table", enemyId: "board_review" }],
+
+    npcs: [
+      { x: 5, y: 2, coworkerId: "vance_holloway" },
+      { x: 15, y: 2, coworkerId: "odette_fairweather" },
+      { x: 25, y: 2, coworkerId: "marcus_windham" },
+      { x: 4, y: 5, coworkerId: "priscilla_wynn" },
+      { x: 14, y: 5, coworkerId: "desmond_cole" },
+      { x: 24, y: 5, coworkerId: "yui_tanaka" },
+    ],
+
+    // Nobody on this floor will give you the time of day — NPC dialogue
+    // and battle objects alike — until you've made Director (Lv.6+, see
+    // ranks.js). Stairs and the floor itself stay reachable; only
+    // interaction is gated.
+    accessGate: {
+      minLevel: 6,
+      message:
+        "A security guard blocks the hall. \"Directors and above only past this point. Come back when you've made rank.\"",
     },
+
+    stairs: [
+      {
+        x: 20,
+        y: 6,
+        label: "STAIRS TO GFS",
+        toFloor: "GFS",
+        arriveAt: { x: 38, y: 9 },
+        transitionMessage: "Taking the stairs to GFS...",
+      },
+    ],
   },
 };

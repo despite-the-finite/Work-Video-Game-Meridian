@@ -6,7 +6,7 @@ no build step required.
 
 You play **Karsh**, freshly promoted to Engineering Manager, working toward
 Executive. Walk the office, fight in conference rooms and huddle spaces, run
-site visits, and negotiate change orders with clients.
+site visits across five industries, and negotiate change orders with clients.
 
 ## Running it
 
@@ -24,21 +24,27 @@ folder over `http://localhost` works too, but isn't required.)
 move, `SPACE` to talk/interact/fight and to confirm menu choices, `H` to warp
 back to your cubicle from anywhere in the office, arrow keys to navigate
 battle menus and the cubicle's mode-select menu. The title and intro screens
-play a small procedurally-synthesized beat.
+play a small procedurally-synthesized beat; the intro also shows the full
+controls legend.
 
 ## What's in the game
 
 - **Title & intro** — a title card over a procedurally drawn construction
   blueprint (storage tanks, a flare stack, a crane) and a short story beat
   setting up the promotion before you land in the office.
-- **Two floors, two departments** — **GFS** is Engineering (the main office
-  floor: desk pods, conference rooms, a break room). **CDB** is Construction
-  (estimators, schedulers, construction managers). Stairs on each floor take
-  you to the other.
+- **Three floors, three departments** — **GFS** is Engineering (the main
+  office floor: desk pods, conference rooms, a break room). **CDB** is
+  Construction (estimators, schedulers, construction managers). **EXEC** is
+  the executive floor — private offices for the COO/CFO/General Counsel plus
+  their secretaries at desks outside each door, and a boardroom. Nobody on
+  EXEC will interact with you until you've made Director; the fights up
+  there are deliberately much tougher than anything else in the game. Each
+  floor has its own color palette so they read as distinct places. Stairs
+  connect GFS↔CDB and GFS↔EXEC.
 - **Your cubicle** — home base, on GFS's west wall. Interact with it to open
-  a mode-select menu: Office, Site Visit, Visitor Day, or PTO — the single
-  hub for every mode.
-- **Coworkers** — a large fictional cast across both floors, each with a
+  a mode-select menu: Office, Site Visit (lists every unlocked site), Visitor
+  Day, or PTO — the single hub for every mode.
+- **Coworkers** — a large fictional cast across all three floors, each with a
   procedurally generated face, hairstyle, and business-casual (or, for
   Visitor Day guests, casual) outfit. A few wander a small loop between the
   break room and nearby desks instead of standing still.
@@ -46,23 +52,30 @@ play a small procedurally-synthesized beat.
   every former "solid" landmark room (stairs, restrooms, huddle rooms,
   utility, print/copy, etc.) is walkable and has one battle object inside —
   walk up and hit SPACE to fight. A handful of coworkers (the QA/QC manager,
-  the client rep, a rival Engineering Manager from CDB) trigger a fight when
-  their dialogue ends instead. Corporate-satire enemies: Scope Creep,
-  Reply-All Storm, Deadline Wraith, Redline Barrage, Schedule Slip, and more.
+  the client rep, a rival Engineering Manager from CDB, and the EXEC-floor
+  big wigs) trigger a fight when their dialogue ends instead. Corporate-satire
+  enemies: Scope Creep, Reply-All Storm, Deadline Wraith, Redline Barrage,
+  Schedule Slip, and more.
 - **Promotion ladder** — leveling up advances your actual job title:
   Engineering Manager → Senior Engineering Manager → Director of
-  Engineering → VP of Engineering → **Executive**. Executive is gated behind
-  a scripted boss fight (a "Performance Review" against the Regional
-  Director, in the La Plata conference room).
+  Engineering → VP of Engineering → **Executive**. Every level up (however
+  it's triggered) hands you a brief "note from the executives" congratulating
+  you before you're back on the floor. Executive itself is gated behind a
+  scripted boss fight (a "Performance Review" against the Regional Director,
+  in the La Plata conference room).
 - **Bonus Potential** — a reputation score starting at 20, with flavor labels
   from "Not Bonus Eligible" to "Stock Options Mentioned Once." Maxing it out
   at 100 rolls over and queues a level up, same as XP overflow — but neither
   path applies until you get a change order approved on a site visit, so
   leveling needs progress in the office *and* on-site, not either alone.
-- **Site visits** — construction-site maps reached from your cubicle. Clear
-  three checkpoints (Safety, Schedule, Quality), survive hazard-zone
-  encounters, then negotiate a change order with the client — winning it is
-  what unlocks any level up you've queued up.
+- **Site visits** — six construction-site maps reached from your cubicle,
+  spanning multiple industries: a processing facility, a food manufacturing
+  plant, a T&D line rebuild, an oil & gas refinery turnaround, a bridge
+  replacement, and a water treatment plant upgrade. Clear three checkpoints
+  (Safety, Schedule, Quality) at each, survive hazard-zone encounters, then
+  negotiate a change order with the client — winning it is what unlocks any
+  level up you've queued up. Completing the first site (Meridian Phase 2)
+  unlocks the other five in the cubicle's menu.
 - **Visitor Day** — a low-stakes bonus mode reached from your cubicle, with
   a bigger, more decorated lobby (flower beds, more trees). Family give a
   one-time Bonus Potential boost plus a free heal; vendors give a repeatable
@@ -82,19 +95,20 @@ src/
   data/                      Plain-data config, no logic
     ranks.js                 Promotion ladder thresholds/titles + shared level-up growth
     bonus.js                 Bonus Potential scoring + labels
-    coworkers.js              Coworker roster + dialogue, both floors
-    enemies.js / bosses.js    Battle-object/chat-triggered fights + the Executive boss fight
-    clients.js                Client negotiation "boss" data
-    site_hazards.js           Random encounters specific to site visits
-    sitevisits.js              Site visit map(s), checkpoints, client trailer
+    coworkers.js              Coworker roster + dialogue, all three floors
+    enemies.js / bosses.js    Battle-object/chat-triggered fights, EXEC-floor bosses, the Executive boss fight
+    clients.js                Client negotiation "boss" data, one per site visit
+    site_hazards.js           Random encounters specific to site visits, generic + industry-specific
+    sitevisits.js              All six site visit maps, checkpoints, client trailers, unlock rules
     visitors.js                Visitor Day cast + lobby map
-    floorplan.js                FLOORS.GFS / FLOORS.CDB — maps, NPCs, battle objects, stairs, cubicle
+    floorplan.js                FLOORS.GFS / CDB / EXEC — maps, NPCs, battle objects, stairs, cubicle
   scenes/
     TitleScene.js               Title card + blueprint art ("Hit any key to play")
     IntroScene.js                Story beat + controls legend, between title and the game
     BootScene.js               Generates all placeholder art procedurally (no image assets)
-    OfficeScene.js              The office overworld (either floor)
+    OfficeScene.js              The office overworld (any of the three floors)
     TransitionScene.js          Brief "Travelling to Site..."-style message between modes
+    PromotionScene.js           "A note from the executives" screen shown on any level up
     SiteVisitScene.js           Site visit maps
     VisitorScene.js             Visitor Day lobby
     BattleScene.js              Shared turn-based battle engine (encounters, bosses, negotiations)
@@ -104,14 +118,17 @@ src/
 All art is generated procedurally at boot (`BootScene.js`) via Phaser's
 `Graphics` API — no external image files, so the game runs from a plain
 `file://` page with zero setup. Every character sprite (skin tone, hair
-style/color, wardrobe trim) is derived deterministically from a hash of its
-texture key, so the cast reads as individuals without needing per-character
-art (a couple of characters pin a specific hair color instead of hashing it).
+style/color, wardrobe trim, arms) is derived deterministically from a hash
+of its texture key, so the cast reads as individuals without needing
+per-character art (a couple of characters pin a specific hair color instead
+of hashing it). Walls draw as thin architectural lines that pick their
+orientation from their neighbors, rather than solid blocks, so a run of
+walls reads as one continuous line instead of a stack of dashes.
 
 ## Status
 
 Actively evolving. Current focus has been core systems (movement, battles,
-promotion ladder, site visits, Visitor Day, PTO, a two-floor office, and a
-cubicle hub for mode selection) over content volume — more coworkers, site
-visits, and story beats are easy to add since everything is data-driven off
-the files in `src/data/`.
+promotion ladder, six site visits across five industries, Visitor Day, PTO,
+a three-floor office, and a cubicle hub for mode selection) over content
+volume — more coworkers, site visits, and story beats are easy to add since
+everything is data-driven off the files in `src/data/`.

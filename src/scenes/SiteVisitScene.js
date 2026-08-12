@@ -50,7 +50,7 @@ class SiteVisitScene extends Phaser.Scene {
       const cy = ((lm.r0 + lm.r1 + 1) / 2) * T;
       this.add
         .text(cx, cy, lm.label, {
-          fontSize: "9px",
+          fontSize: "11px",
           fontFamily: "Courier New",
           color: "#1a1a1a",
           align: "center",
@@ -118,7 +118,7 @@ class SiteVisitScene extends Phaser.Scene {
     );
     this.add
       .text(exitPos.x * T + T / 2, exitPos.y * T + T / 2 - T * 0.9, "EXIT SITE", {
-        fontSize: "9px",
+        fontSize: "11px",
         fontFamily: "Courier New",
         color: "#ffb454",
         align: "center",
@@ -340,6 +340,7 @@ class SiteVisitScene extends Phaser.Scene {
     this.scene.start("BattleScene", {
       enemyId: this.site.clientTrailer.clientId,
       returnScene: "OfficeScene",
+      completesSiteId: this.siteId,
     });
   }
 

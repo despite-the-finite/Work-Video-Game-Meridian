@@ -20,6 +20,9 @@ const PLAYER_STATE = {
   levelUpPending: false,
   visitorGreeted: { wife: false, daughter: false, parents: false },
   wellFedBattles: 0,
+  // Keyed by SITE_VISITS id, set true once that site's client negotiation
+  // is won (see BattleScene). Other sites use unlockedBy to gate on this.
+  completedSites: {},
 };
 
 const config = {
@@ -42,6 +45,7 @@ const config = {
     BootScene,
     OfficeScene,
     TransitionScene,
+    PromotionScene,
     SiteVisitScene,
     VisitorScene,
     BattleScene,

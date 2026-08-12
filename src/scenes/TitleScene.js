@@ -62,7 +62,7 @@ class TitleScene extends Phaser.Scene {
     g.lineBetween(compassX + 4, compassY - r + 2, compassX, compassY - r - 6);
     this.add
       .text(compassX, compassY + r + 9, "N", {
-        fontSize: "9px",
+        fontSize: "11px",
         fontFamily: "Courier New",
         color: "#bfe3ff",
       })
@@ -134,7 +134,7 @@ class TitleScene extends Phaser.Scene {
     g.lineBetween(dimX2, dimY, dimX2 - 7, dimY + 3);
     this.add
       .text((dimX1 + dimX2) / 2, dimY, "PROCESS AREA — N.T.S.", {
-        fontSize: "8px",
+        fontSize: "10px",
         fontFamily: "Courier New",
         color: "#bfe3ff",
         backgroundColor: "#0f3a5c",

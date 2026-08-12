@@ -23,6 +23,7 @@ class OfficeScene extends Phaser.Scene {
     const T = this.floor.tileSize;
     this.tileSize = T;
     this.grid = this.floor.layout.map((row) => row.split(""));
+    this.floorTexKey = this.floor.theme ? `tile_floor_${this.floor.theme}` : "tile_floor";
 
     this.solids = this.physics.add.staticGroup();
 
@@ -33,17 +34,17 @@ class OfficeScene extends Phaser.Scene {
         const py = y * T + T / 2;
 
         if (ch === "1") {
-          this.solids.create(px, py, "tile_wall").setSize(T, T).refreshBody();
+          this.solids.create(px, py, this.wallTextureKey(x, y)).setSize(T, T).refreshBody();
         } else if (ch === "2") {
-          this.add.image(px, py, "tile_floor");
+          this.add.image(px, py, this.floorTexKey);
           this.solids.create(px, py, "tile_desk").setSize(T, T).refreshBody();
         } else if (ch === "3") {
-          this.add.image(px, py, "tile_floor");
+          this.add.image(px, py, this.floorTexKey);
           this.solids.create(px, py, "tile_plant").setSize(T * 0.6, T * 0.6).refreshBody();
         } else if (ch === "6") {
           this.add.image(px, py, "tile_break");
         } else {
-          this.add.image(px, py, "tile_floor");
+          this.add.image(px, py, this.floorTexKey);
         }
       }
     }
@@ -62,7 +63,7 @@ class OfficeScene extends Phaser.Scene {
       const cy = ((lm.r0 + lm.r1 + 1) / 2) * T;
       this.add
         .text(cx, cy, lm.label, {
-          fontSize: "9px",
+          fontSize: "11px",
           fontFamily: "Courier New",
           color: "#aeb8e0",
           align: "center",
@@ -76,10 +77,10 @@ class OfficeScene extends Phaser.Scene {
       const px = d.x * T + T / 2;
       const py = d.y * T + T / 2;
       if (d.type === "watercooler") {
-        this.add.image(px, py, "tile_floor");
+        this.add.image(px, py, this.floorTexKey);
         this.solids.create(px, py, "tile_watercooler").setSize(T * 0.6, T * 0.6).refreshBody();
       } else if (d.type === "wallart") {
-        this.add.image(px, py, "tile_floor");
+        this.add.image(px, py, this.floorTexKey);
         this.add.image(px, py, "tile_wallart");
       }
     });
@@ -160,7 +161,7 @@ class OfficeScene extends Phaser.Scene {
       this.battleObjectData.push({ sprite: spr, def });
       this.add
         .text(px, py - T * 0.8, def.label, {
-          fontSize: "8px",
+          fontSize: "10px",
           fontFamily: "Courier New",
           color: "#e08a8a",
           align: "center",
@@ -170,7 +171,11 @@ class OfficeScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.battleObjectGroup);
 
     // Home base — only GFS has one; mode selection lives at the player's
-    // own desk, not duplicated per floor.
+    // own desk, not duplicated per floor. Reset explicitly so switching
+    // from a floor that has one to a floor that doesn't can't leave a
+    // stale reference to the previous (destroyed) sprite behind.
+    this.homeBaseSprite = null;
+    this.homeBaseGroup = null;
     if (this.floor.homeBase) {
       const hb = this.floor.homeBase;
       this.homeBaseGroup = this.physics.add.staticGroup();
@@ -180,7 +185,7 @@ class OfficeScene extends Phaser.Scene {
       this.homeBaseSprite.setSize(T, T).refreshBody();
       this.add
         .text(hbPx, hbPy - T * 0.9, hb.label, {
-          fontSize: "9px",
+          fontSize: "11px",
           fontFamily: "Courier New",
           color: "#ffe9a8",
           align: "center",
@@ -189,24 +194,26 @@ class OfficeScene extends Phaser.Scene {
       this.physics.add.collider(this.player, this.homeBaseGroup);
     }
 
-    // Stairs to the other floor.
-    if (this.floor.stairs) {
-      const st = this.floor.stairs;
-      this.stairsGroup = this.physics.add.staticGroup();
+    // Stairs to other floors — a floor can have more than one (GFS has
+    // stairs to both CDB and EXEC).
+    this.stairsGroup = this.physics.add.staticGroup();
+    this.stairsData = [];
+    (this.floor.stairs || []).forEach((st) => {
       const spx = st.x * T + T / 2;
       const spy = st.y * T + T / 2;
-      this.stairsSprite = this.stairsGroup.create(spx, spy, "tile_portal");
-      this.stairsSprite.setSize(T * 0.9, T * 0.7).refreshBody();
+      const spr = this.stairsGroup.create(spx, spy, "tile_portal");
+      spr.setSize(T * 0.9, T * 0.7).refreshBody();
+      this.stairsData.push({ sprite: spr, def: st });
       this.add
         .text(spx, spy - T * 0.9, st.label, {
-          fontSize: "9px",
+          fontSize: "11px",
           fontFamily: "Courier New",
           color: "#ffb454",
           align: "center",
         })
         .setOrigin(0.5);
-      this.physics.add.collider(this.player, this.stairsGroup);
-    }
+    });
+    this.physics.add.collider(this.player, this.stairsGroup);
 
     // Camera / world bounds
     const worldW = this.floor.width * T;
@@ -242,6 +249,21 @@ class OfficeScene extends Phaser.Scene {
     this.refreshHud();
 
     if (this.ptoResult) this.applyPtoResult();
+  }
+
+  // Picks the wall texture variant so a run of wall tiles reads as one
+  // continuous architectural line instead of a stack of disconnected
+  // dashes: horizontal band if the run goes left/right, vertical if it
+  // goes up/down, both bands (a cross) at a corner or junction.
+  wallTextureKey(x, y) {
+    const isWall = (gx, gy) =>
+      this.grid[gy] !== undefined && this.grid[gy][gx] === "1";
+    const horizontal = isWall(x - 1, y) || isWall(x + 1, y);
+    const vertical = isWall(x, y - 1) || isWall(x, y + 1);
+    const suffix = this.floor.theme ? `_${this.floor.theme}` : "";
+    if (horizontal && vertical) return `tile_wall${suffix}_x`;
+    if (vertical) return `tile_wall${suffix}_v`;
+    return `tile_wall${suffix}_h`;
   }
 
   buildHud() {
@@ -286,6 +308,19 @@ class OfficeScene extends Phaser.Scene {
         `Bonus: ${p.bonusPotential}/100 — ${getBonusLabel(p.bonusPotential)}${wellFedNote}${pendingNote}`
     );
     this.hudBg.height = p.levelUpPending ? 96 : 62;
+  }
+
+  // Used on gated floors (EXEC) — a stand-in "NPC" so the rebuff message
+  // reuses the same dialogue box/advance flow instead of a new system.
+  showGateMessage(message) {
+    this.activeDialogueNpc = {
+      coworker: { name: "Security", dialogue: [message] },
+      lineIndex: 0,
+      activeLines: [message],
+      readyForBoss: false,
+    };
+    this.dialogueContainer.setVisible(true);
+    this.showDialogueLine();
   }
 
   applyPtoResult() {
@@ -417,10 +452,37 @@ class OfficeScene extends Phaser.Scene {
     this.selectedMenuIndex = 0;
   }
 
+  // Expands the "site_visit_list" placeholder into one "travel" entry per
+  // SITE_VISITS id that's unlocked (no unlockedBy, or that site's id is
+  // marked complete in PLAYER_STATE.completedSites) — everything else in
+  // homeBase.options passes through untouched.
+  buildMenuOptions() {
+    const options = [];
+    this.floor.homeBase.options.forEach((opt) => {
+      if (opt.action !== "site_visit_list") {
+        options.push(opt);
+        return;
+      }
+      Object.keys(SITE_VISITS).forEach((siteId) => {
+        const site = SITE_VISITS[siteId];
+        if (site.unlockedBy && !PLAYER_STATE.completedSites[site.unlockedBy]) return;
+        options.push({
+          label: `Site Visit: ${site.name}`,
+          action: "travel",
+          sceneKey: "SiteVisitScene",
+          payload: { siteId },
+          transitionMessage: `Travelling to ${site.name}...`,
+        });
+      });
+    });
+    return options;
+  }
+
   openModeMenu() {
     this.selectedMenuIndex = 0;
+    this.currentMenuOptions = this.buildMenuOptions();
     this.modeMenuTexts.forEach((t) => t.destroy());
-    this.modeMenuTexts = this.floor.homeBase.options.map((opt, i) =>
+    this.modeMenuTexts = this.currentMenuOptions.map((opt, i) =>
       this.add.text(200, 190 + i * 22, opt.label, {
         fontSize: "12px",
         fontFamily: "Courier New",
@@ -442,7 +504,7 @@ class OfficeScene extends Phaser.Scene {
   }
 
   confirmModeMenu() {
-    const opt = this.floor.homeBase.options[this.selectedMenuIndex];
+    const opt = this.currentMenuOptions[this.selectedMenuIndex];
     this.closeModeMenu();
     if (opt.action === "travel") {
       this.travelTo(opt.sceneKey, opt.payload, opt.transitionMessage);
@@ -515,15 +577,12 @@ class OfficeScene extends Phaser.Scene {
   }
 
   findNearbyStairs() {
-    if (!this.stairsSprite) return null;
     const T = this.tileSize;
-    const d = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      this.stairsSprite.x,
-      this.stairsSprite.y
-    );
-    return d < T * 1.2 ? this.floor.stairs : null;
+    for (const st of this.stairsData) {
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, st.sprite.x, st.sprite.y);
+      if (d < T * 1.2) return st.def;
+    }
+    return null;
   }
 
   travelTo(sceneKey, payload, transitionMessage) {
@@ -561,7 +620,7 @@ class OfficeScene extends Phaser.Scene {
     if (this.floor.homeBase && this.modeMenuContainer.visible) {
       this.player.setVelocity(0, 0);
       this.updateWanderers(delta);
-      const optionCount = this.floor.homeBase.options.length;
+      const optionCount = this.currentMenuOptions.length;
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
         this.selectedMenuIndex = (this.selectedMenuIndex - 1 + optionCount) % optionCount;
         this.updateModeMenuCursor();
@@ -602,7 +661,11 @@ class OfficeScene extends Phaser.Scene {
       const battleObj = this.findNearbyBattleObject();
       const homeBase = this.findNearbyHomeBase();
       const stairs = this.findNearbyStairs();
-      if (npc) {
+      const gate = this.floor.accessGate;
+      const gateBlocks = gate && PLAYER_STATE.level < gate.minLevel && (npc || battleObj);
+      if (gateBlocks) {
+        this.showGateMessage(gate.message);
+      } else if (npc) {
         this.openDialogue(npc);
       } else if (battleObj) {
         const enemyId = battleObj.def.enemyId || Phaser.Utils.Array.GetRandom(ENEMIES).id;
