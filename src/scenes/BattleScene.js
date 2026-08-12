@@ -32,6 +32,8 @@ class BattleScene extends Phaser.Scene {
     this.playerGuarding = false;
     this.battleOver = false;
     this.awaitingAdvance = false;
+    this.playerLost = false;
+    this.lossSelectedIndex = 0;
   }
 
   create() {
@@ -112,6 +114,66 @@ class BattleScene extends Phaser.Scene {
       fontFamily: "Courier New",
       color: "#ffe9a8",
     });
+
+    // Shown only while waiting on the enemy's move — otherwise the log
+    // just quietly sits there after your own action and SPACE looks like
+    // "continue" rather than "let them swing."
+    this.turnIndicatorText = this.add
+      .text(480, 296, "", {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ff8a8a",
+        align: "center",
+        wordWrap: { width: 150 },
+      })
+      .setOrigin(0.5);
+    this.tweens.add({
+      targets: this.turnIndicatorText,
+      alpha: { from: 1, to: 0.35 },
+      duration: 450,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // Loss screen — takes over the whole board on defeat instead of the
+    // normal "press SPACE to continue," so losing gets an explicit
+    // Retry-or-Exit choice plus a clear readout of what it cost in Bonus
+    // Potential, rather than that detail scrolling by in the log line.
+    this.lossContainer = this.add.container(0, 0).setVisible(false);
+    const lossBg = this.add
+      .rectangle(320, 240, 480, 220, 0x14161c, 0.97)
+      .setStrokeStyle(2, 0xa63d3d);
+    const lossTitle = this.add
+      .text(320, 165, "SETBACK", {
+        fontSize: "16px",
+        fontFamily: "Courier New",
+        color: "#ff8a8a",
+      })
+      .setOrigin(0.5);
+    this.lossMessageText = this.add
+      .text(320, 195, "", {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ffffff",
+        align: "center",
+        wordWrap: { width: 420 },
+      })
+      .setOrigin(0.5, 0);
+    this.lossOptionTexts = ["Retry", "Exit"].map((label, i) =>
+      this.add
+        .text(320, 305 + i * 24, label, {
+          fontSize: "13px",
+          fontFamily: "Courier New",
+          color: "#ffffff",
+        })
+        .setOrigin(0.5)
+    );
+    this.lossCursorText = this.add.text(0, 0, ">", {
+      fontSize: "13px",
+      fontFamily: "Courier New",
+      color: "#ffe9a8",
+    });
+    this.lossContainer.add([lossBg, lossTitle, this.lossMessageText, ...this.lossOptionTexts, this.lossCursorText]);
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.confirmKey = this.input.keyboard.addKey(
@@ -194,7 +256,26 @@ class BattleScene extends Phaser.Scene {
     this.cursorText.setPosition(target.x - 20, target.y);
   }
 
+  updateLossCursor() {
+    const target = this.lossOptionTexts[this.lossSelectedIndex];
+    this.lossCursorText.setPosition(target.x - target.width / 2 - 20, target.y - 8);
+  }
+
   update() {
+    if (this.playerLost) {
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
+        this.lossSelectedIndex = this.lossSelectedIndex === 0 ? 1 : 0;
+        this.updateLossCursor();
+      } else if (Phaser.Input.Keyboard.JustDown(this.confirmKey)) {
+        if (this.lossSelectedIndex === 0) {
+          this.retryBattle();
+        } else {
+          this.returnToOffice();
+        }
+      }
+      return;
+    }
+
     if (this.battleOver) {
       if (Phaser.Input.Keyboard.JustDown(this.confirmKey)) {
         this.returnToOffice();
@@ -283,10 +364,23 @@ class BattleScene extends Phaser.Scene {
     }
 
     this.awaitingAdvance = true;
+    this.turnIndicatorText.setText(`▼ ${this.enemy.name.toUpperCase()}'S TURN — SPACE ▼`);
+    this.menuTexts.forEach((t) => t.setAlpha(0.35));
+    this.cursorText.setAlpha(0.35);
   }
 
   afterMessageContinue() {
     // Enemy turn
+    this.turnIndicatorText.setText("");
+    this.menuTexts.forEach((t) => t.setAlpha(1));
+    this.cursorText.setAlpha(1);
+    this.tweens.add({
+      targets: this.enemySprite,
+      scale: { from: 1.15, to: 1 },
+      duration: 220,
+      ease: "Quad.easeOut",
+    });
+
     const p = PLAYER_STATE;
     const move = Phaser.Utils.Array.GetRandom(this.enemy.moves);
     let dmg = Phaser.Math.Between(move.dmgMin, move.dmgMax) + this.enemy.atk - p.def;
@@ -355,22 +449,45 @@ class BattleScene extends Phaser.Scene {
 
   onPlayerDefeated() {
     this.battleOver = true;
+    this.playerLost = true;
     PLAYER_STATE.hp = Math.ceil(PLAYER_STATE.maxHp * 0.4);
+
+    let flavor;
+    let bonusDelta;
     if (this.isBoss) {
-      this.setLog(
-        `${this.enemy.loseMessage || "The review is cut short."}\n(HP restored to ${PLAYER_STATE.hp} — come back when you're ready.)\n${applyBonusPotential(-5)}`
-      );
+      flavor = this.enemy.loseMessage || "The review is cut short. Come back when you're ready.";
+      bonusDelta = -5;
     } else if (this.isClientNegotiation) {
-      this.setLog(
-        `${this.enemy.loseMessage || "The client gets their way."}\n(HP restored to ${PLAYER_STATE.hp})\n${applyBonusPotential(-6)}`
-      );
+      flavor = this.enemy.loseMessage || "The client gets their way.";
+      bonusDelta = -6;
     } else {
-      this.setLog(
-        `You blacked out mid-task. A coworker finds you asleep at your desk and covers for you...\n(HP restored to ${PLAYER_STATE.hp})\n${applyBonusPotential(-1)}`
-      );
+      flavor = "You blacked out mid-task. A coworker finds you asleep at your desk and covers for you...";
+      bonusDelta = -1;
     }
+    const bonusMsg = applyBonusPotential(bonusDelta);
+
     this.consumeWellFed();
     this.refreshBars();
+    this.showLossScreen(`${flavor}\n\nHP restored to ${PLAYER_STATE.hp}/${PLAYER_STATE.maxHp}.\n${bonusMsg}`);
+  }
+
+  showLossScreen(message) {
+    this.turnIndicatorText.setText("");
+    this.setLog("");
+    this.lossMessageText.setText(message);
+    this.lossSelectedIndex = 0;
+    this.lossContainer.setVisible(true);
+    this.updateLossCursor();
+  }
+
+  retryBattle() {
+    this.scene.restart({
+      enemyId: this.enemy.id,
+      isBoss: this.isBoss,
+      returnScene: this.returnScene,
+      returnSiteId: this.returnSiteId,
+      completesSiteId: this.completesSiteId,
+    });
   }
 
   returnToOffice() {
