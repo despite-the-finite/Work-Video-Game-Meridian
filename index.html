@@ -23,8 +23,9 @@
 <body>
 <div id="game-container"></div>
 
-<!-- Phaser via CDN -->
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<!-- Phaser, vendored locally (src/vendor/phaser.min.js) so the game works
+     offline / with no internet access — no CDN dependency. -->
+<script src="src/vendor/phaser.min.js"></script>
 
 <!-- Audio -->
 <script src="src/audio.js"></script>
