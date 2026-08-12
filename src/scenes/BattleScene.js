@@ -34,6 +34,7 @@ class BattleScene extends Phaser.Scene {
     this.awaitingAdvance = false;
     this.playerLost = false;
     this.lossSelectedIndex = 0;
+    this.gameOver = false;
   }
 
   create() {
@@ -175,6 +176,43 @@ class BattleScene extends Phaser.Scene {
     });
     this.lossContainer.add([lossBg, lossTitle, this.lossMessageText, ...this.lossOptionTexts, this.lossCursorText]);
 
+    // Game Over — Bonus Potential hit 0. No Retry here (unlike the loss
+    // screen above): the run itself is over, not just this one fight.
+    this.gameOverContainer = this.add.container(0, 0).setVisible(false);
+    const gameOverBg = this.add.rectangle(320, 240, 640, 480, 0x1c0e0e, 0.96);
+    const gameOverTitle = this.add
+      .text(320, 150, "GAME OVER", {
+        fontSize: "28px",
+        fontFamily: "Courier New",
+        color: "#ff8a8a",
+      })
+      .setOrigin(0.5);
+    this.gameOverMessageText = this.add
+      .text(320, 210, "", {
+        fontSize: "13px",
+        fontFamily: "Courier New",
+        color: "#ffffff",
+        align: "center",
+        wordWrap: { width: 480 },
+      })
+      .setOrigin(0.5, 0);
+    const gameOverPrompt = this.add
+      .text(320, 400, "Hit any key to restart", {
+        fontSize: "14px",
+        fontFamily: "Courier New",
+        color: "#ffe9a8",
+        align: "center",
+      })
+      .setOrigin(0.5);
+    this.tweens.add({
+      targets: gameOverPrompt,
+      alpha: 0.15,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+    });
+    this.gameOverContainer.add([gameOverBg, gameOverTitle, this.gameOverMessageText, gameOverPrompt]);
+
     this.cursors = this.input.keyboard.createCursorKeys();
     this.confirmKey = this.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE
@@ -262,6 +300,8 @@ class BattleScene extends Phaser.Scene {
   }
 
   update() {
+    if (this.gameOver) return; // restart happens via the one-shot keydown listener in showGameOver()
+
     if (this.playerLost) {
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.down)) {
         this.lossSelectedIndex = this.lossSelectedIndex === 0 ? 1 : 0;
@@ -456,19 +496,25 @@ class BattleScene extends Phaser.Scene {
     let bonusDelta;
     if (this.isBoss) {
       flavor = this.enemy.loseMessage || "The review is cut short. Come back when you're ready.";
-      bonusDelta = -5;
+      bonusDelta = -8;
     } else if (this.isClientNegotiation) {
       flavor = this.enemy.loseMessage || "The client gets their way.";
-      bonusDelta = -6;
+      bonusDelta = -8;
     } else {
       flavor = "You blacked out mid-task. A coworker finds you asleep at your desk and covers for you...";
-      bonusDelta = -1;
+      bonusDelta = -5;
     }
     const bonusMsg = applyBonusPotential(bonusDelta);
 
     this.consumeWellFed();
     this.refreshBars();
-    this.showLossScreen(`${flavor}\n\nHP restored to ${PLAYER_STATE.hp}/${PLAYER_STATE.maxHp}.\n${bonusMsg}`);
+    const message = `${flavor}\n\nHP restored to ${PLAYER_STATE.hp}/${PLAYER_STATE.maxHp}.\n${bonusMsg}`;
+
+    if (PLAYER_STATE.bonusPotential <= 0) {
+      this.showGameOver(message);
+    } else {
+      this.showLossScreen(message);
+    }
   }
 
   showLossScreen(message) {
@@ -478,6 +524,22 @@ class BattleScene extends Phaser.Scene {
     this.lossSelectedIndex = 0;
     this.lossContainer.setVisible(true);
     this.updateLossCursor();
+  }
+
+  // Bonus Potential bottomed out — the run ends here, no Retry: reputation
+  // is gone, not just this fight. Any key restarts a fresh run.
+  showGameOver(message) {
+    this.turnIndicatorText.setText("");
+    this.setLog("");
+    this.gameOver = true;
+    this.gameOverMessageText.setText(
+      `${message}\n\nBonus Potential hit 0 — HR has some questions.`
+    );
+    this.gameOverContainer.setVisible(true);
+    this.input.keyboard.once("keydown", () => {
+      resetPlayerState();
+      this.scene.start("TitleScene");
+    });
   }
 
   retryBattle() {
