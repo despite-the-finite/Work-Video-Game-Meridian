@@ -49,8 +49,13 @@ class OfficeScene extends Phaser.Scene {
       }
     }
 
-    // Landmark rooms (huddles, restrooms, stairs, print/copy, etc) — fully
-    // walkable now; each one has a battleObject inside (see below).
+    // Landmark rooms (huddles, restrooms, print/copy, etc) — fully walkable
+    // now; each one has a battleObject inside (see below). The one
+    // exception is a room labeled "STAIRS": that's a real functional room,
+    // with its own physical trigger point instead of a battleObject — walk
+    // up and hit SPACE to pick a floor from this.floor.stairs.
+    this.stairsGroup = this.physics.add.staticGroup();
+    this.stairsData = [];
     (this.floor.landmarks || []).forEach((lm) => {
       for (let y = lm.r0; y <= lm.r1; y++) {
         for (let x = lm.c0; x <= lm.c1; x++) {
@@ -61,14 +66,24 @@ class OfficeScene extends Phaser.Scene {
       }
       const cx = ((lm.c0 + lm.c1 + 1) / 2) * T;
       const cy = ((lm.r0 + lm.r1 + 1) / 2) * T;
+      const isStairs = lm.label === "STAIRS";
+      // The stairs icon sits at room-center, so its label floats above the
+      // icon (matching how battleObjects/homeBase label themselves) instead
+      // of overlapping it the way a plain landmark's centered text would.
       this.add
-        .text(cx, cy, lm.label, {
+        .text(cx, isStairs ? cy - T * 0.9 : cy, lm.label, {
           fontSize: "11px",
           fontFamily: "Courier New",
           color: "#aeb8e0",
           align: "center",
         })
         .setOrigin(0.5);
+
+      if (isStairs) {
+        const spr = this.stairsGroup.create(cx, cy, "tile_stairs");
+        spr.setSize(T * 0.9, T * 0.9).refreshBody();
+        this.stairsData.push({ sprite: spr });
+      }
     });
 
     // Decorative-only props — no gameplay effect, just make the floor feel
@@ -194,25 +209,10 @@ class OfficeScene extends Phaser.Scene {
       this.physics.add.collider(this.player, this.homeBaseGroup);
     }
 
-    // Stairs to other floors — a floor can have more than one (GFS has
-    // stairs to both CDB and EXEC).
-    this.stairsGroup = this.physics.add.staticGroup();
-    this.stairsData = [];
-    (this.floor.stairs || []).forEach((st) => {
-      const spx = st.x * T + T / 2;
-      const spy = st.y * T + T / 2;
-      const spr = this.stairsGroup.create(spx, spy, "tile_portal");
-      spr.setSize(T * 0.9, T * 0.7).refreshBody();
-      this.stairsData.push({ sprite: spr, def: st });
-      this.add
-        .text(spx, spy - T * 0.9, st.label, {
-          fontSize: "11px",
-          fontFamily: "Courier New",
-          color: "#ffb454",
-          align: "center",
-        })
-        .setOrigin(0.5);
-    });
+    // Physics collider for the stairs trigger points created inside
+    // "STAIRS" landmark rooms above (this.stairsGroup/this.stairsData were
+    // populated by the landmarks loop, since that's where those rooms — and
+    // now their real function — live).
     this.physics.add.collider(this.player, this.stairsGroup);
 
     // Camera / world bounds
@@ -242,6 +242,7 @@ class OfficeScene extends Phaser.Scene {
     this.buildHud();
     this.buildDialogueBox();
     if (this.floor.homeBase) this.buildModeMenu();
+    this.buildStairsMenu();
 
     this.encounterLocked = false;
     this.activeDialogueNpc = null;
@@ -513,6 +514,74 @@ class OfficeScene extends Phaser.Scene {
     }
   }
 
+  // Floor-select menu opened from a STAIRS room — same look/pattern as the
+  // cubicle's mode menu, just a separate instance so cubicle actions and
+  // stairs destinations never share state.
+  buildStairsMenu() {
+    this.stairsMenuContainer = this.add.container(0, 0).setScrollFactor(0);
+    const bg = this.add
+      .rectangle(320, 240, 280, 150, 0x14161c, 0.95)
+      .setStrokeStyle(2, 0xffb454);
+    const title = this.add
+      .text(320, 180, "TAKE THE STAIRS TO...", {
+        fontSize: "13px",
+        fontFamily: "Courier New",
+        color: "#ffb454",
+      })
+      .setOrigin(0.5);
+    this.stairsMenuCursor = this.add.text(0, 0, ">", {
+      fontSize: "12px",
+      fontFamily: "Courier New",
+      color: "#ffb454",
+    });
+    this.stairsMenuContainer.add([bg, title, this.stairsMenuCursor]);
+    this.stairsMenuContainer.setVisible(false);
+    this.stairsMenuTexts = [];
+    this.selectedStairsIndex = 0;
+  }
+
+  openStairsMenu() {
+    this.selectedStairsIndex = 0;
+    this.currentStairsOptions = this.floor.stairs;
+    this.stairsMenuTexts.forEach((t) => t.destroy());
+    this.stairsMenuTexts = this.currentStairsOptions.map((opt, i) =>
+      this.add.text(220, 205 + i * 22, opt.label, {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ffffff",
+      })
+    );
+    this.stairsMenuTexts.forEach((t) => this.stairsMenuContainer.add(t));
+    this.stairsMenuContainer.setVisible(true);
+    this.updateStairsMenuCursor();
+  }
+
+  updateStairsMenuCursor() {
+    const target = this.stairsMenuTexts[this.selectedStairsIndex];
+    this.stairsMenuCursor.setPosition(target.x - 18, target.y);
+  }
+
+  closeStairsMenu() {
+    this.stairsMenuContainer.setVisible(false);
+  }
+
+  confirmStairsMenu() {
+    const dest = this.currentStairsOptions[this.selectedStairsIndex];
+    this.closeStairsMenu();
+    this.takeStairs(dest);
+  }
+
+  takeStairs(dest) {
+    // No returnPos here (unlike travelTo/startBattle) — this is a real
+    // cross-floor move, so the destination should use dest.arriveAt, not
+    // snap back to the pixel position the player is standing at right now.
+    this.scene.start("TransitionScene", {
+      message: dest.transitionMessage,
+      nextScene: "OfficeScene",
+      nextPayload: { floorId: dest.toFloor, arrivePos: dest.arriveAt },
+    });
+  }
+
   takePto(message) {
     this.scene.start("TransitionScene", {
       message,
@@ -576,13 +645,16 @@ class OfficeScene extends Phaser.Scene {
     return d < T * 1.2 ? this.floor.homeBase : null;
   }
 
+  // Returns true if the player is next to a STAIRS trigger point — the
+  // destination list itself always comes from this.floor.stairs (every
+  // STAIRS room on a floor offers the same set of reachable floors).
   findNearbyStairs() {
     const T = this.tileSize;
     for (const st of this.stairsData) {
       const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, st.sprite.x, st.sprite.y);
-      if (d < T * 1.2) return st.def;
+      if (d < T * 1.2) return true;
     }
-    return null;
+    return false;
   }
 
   travelTo(sceneKey, payload, transitionMessage) {
@@ -633,6 +705,22 @@ class OfficeScene extends Phaser.Scene {
       return;
     }
 
+    if (this.stairsMenuContainer.visible) {
+      this.player.setVelocity(0, 0);
+      this.updateWanderers(delta);
+      const optionCount = this.currentStairsOptions.length;
+      if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
+        this.selectedStairsIndex = (this.selectedStairsIndex - 1 + optionCount) % optionCount;
+        this.updateStairsMenuCursor();
+      } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || Phaser.Input.Keyboard.JustDown(this.wasd.down)) {
+        this.selectedStairsIndex = (this.selectedStairsIndex + 1) % optionCount;
+        this.updateStairsMenuCursor();
+      } else if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+        this.confirmStairsMenu();
+      }
+      return;
+    }
+
     if (this.encounterLocked) {
       this.player.setVelocity(0, 0);
       this.updateWanderers(delta);
@@ -673,12 +761,11 @@ class OfficeScene extends Phaser.Scene {
       } else if (homeBase) {
         this.openModeMenu();
       } else if (stairs) {
-        this.registry.set("returnPos", { x: this.player.x, y: this.player.y });
-        this.scene.start("TransitionScene", {
-          message: stairs.transitionMessage,
-          nextScene: "OfficeScene",
-          nextPayload: { floorId: stairs.toFloor, arrivePos: stairs.arriveAt },
-        });
+        if (this.floor.stairs.length > 1) {
+          this.openStairsMenu();
+        } else {
+          this.takeStairs(this.floor.stairs[0]);
+        }
       }
     }
 

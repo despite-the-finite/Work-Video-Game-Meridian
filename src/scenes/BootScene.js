@@ -24,6 +24,7 @@ class BootScene extends Phaser.Scene {
     this.generateBattleObjectTexture(T);
     this.generateBreakRoomTexture(T);
     this.generateLandmarkTexture(T);
+    this.generateStairsTexture(T);
     this.generateCubicleTexture(T);
     this.generateWaterCoolerTexture(T);
     this.generateWallArtTexture(T);
@@ -226,6 +227,32 @@ class BootScene extends Phaser.Scene {
     g.lineStyle(1, 0x4a5580, 1);
     g.strokeRect(1, 1, T - 2, T - 2);
     g.generateTexture("tile_landmark", T, T);
+    g.destroy();
+  }
+
+  // The physical trigger placed inside a "STAIRS" landmark room (see
+  // floorplan.js + OfficeScene.openStairsMenu) — ascending steps read
+  // clearly as a staircase, unlike the old tile_portal (still used
+  // elsewhere) whose two ground-level circles read as bus wheels.
+  generateStairsTexture(T) {
+    const g = this.add.graphics();
+    g.fillStyle(0x2e3550, 1);
+    g.fillRect(0, 0, T, T);
+    g.lineStyle(1, 0x4a5580, 1);
+    g.strokeRect(1, 1, T - 2, T - 2);
+    const steps = 4;
+    const stepW = (T - 8) / steps;
+    for (let i = 0; i < steps; i++) {
+      const stepH = 5 + i * 5;
+      const sx = 4 + i * stepW;
+      g.fillStyle(0x1c2338, 1);
+      g.fillRect(sx + 1, T - 3 - stepH, stepW - 1, stepH + 2);
+      g.fillStyle(0xaeb8e0, 1);
+      g.fillRect(sx, T - 4 - stepH, stepW - 1, 4);
+    }
+    g.fillStyle(0xffe9a8, 1);
+    g.fillTriangle(T - 8, T * 0.28, T - 3, T * 0.28, T - 5.5, T * 0.12);
+    g.generateTexture("tile_stairs", T, T);
     g.destroy();
   }
 

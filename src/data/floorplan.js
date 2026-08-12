@@ -13,10 +13,13 @@
 //   6 = break room floor (walkable, slowly restores HP/MP — coffee break)
 //
 // Office battles are no longer random-tile encounters. Every conference
-// room and every former "solid landmark" room (stairs, restrooms,
-// huddle rooms, utility, etc.) is walkable, and each has one battleObject
-// inside it — walk up and hit SPACE to fight, same interaction pattern as
-// talking to an NPC. See OfficeScene.js's findNearbyBattleObject().
+// room and every former "solid landmark" room (restrooms, huddle rooms,
+// utility, etc.) is walkable, and each has one battleObject inside it —
+// walk up and hit SPACE to fight, same interaction pattern as talking to
+// an NPC. See OfficeScene.js's findNearbyBattleObject(). The one exception
+// is any landmark labeled "STAIRS" — that's a real functional room: walk
+// up and hit SPACE to open a floor-select menu instead (see
+// OfficeScene.js's openStairsMenu()).
 
 const FLOORS = {
   GFS: {
@@ -93,7 +96,7 @@ const FLOORS = {
       { x: 33, y: 3, label: "Conference Phone (LONGS)" },
       { x: 42, y: 3, label: "AV Remote (GRAYS)" },
       { x: 48, y: 13, label: "Conference Table (QUANDARY)" },
-      { x: 31, y: 7, label: "Stairwell Landing" },
+      { x: 24, y: 13, label: "Conference Table (PIKES)" },
       { x: 36, y: 7, label: "Restroom Line" },
       { x: 31, y: 9, label: "Jammed Printer" },
       { x: 24, y: 18, label: "Huddle Room Whiteboard" },
@@ -101,7 +104,6 @@ const FLOORS = {
       { x: 45, y: 18, label: "Huddle Room Whiteboard" },
       { x: 45, y: 20, label: "Sign-Up Sheet" },
       { x: 33, y: 23, label: "Supply Cabinet" },
-      { x: 41, y: 23, label: "Stairwell Landing" },
     ],
 
     // Player starting tile position (col, row) — right next to the home
@@ -182,20 +184,18 @@ const FLOORS = {
       ],
     },
 
-    // Stairs to the other floors.
+    // Floors reachable from this one — every landmark room labeled "STAIRS"
+    // (see landmarks above) is a physical trigger point that offers this
+    // whole list as a floor-select menu (see OfficeScene.openStairsMenu).
     stairs: [
       {
-        x: 33,
-        y: 9,
-        label: "STAIRS TO CDB",
+        label: "CDB",
         toFloor: "CDB",
         arriveAt: { x: 22, y: 12 },
         transitionMessage: "Taking the stairs to CDB...",
       },
       {
-        x: 38,
-        y: 9,
-        label: "STAIRS TO EXEC",
+        label: "EXEC",
         toFloor: "EXEC",
         arriveAt: { x: 20, y: 6 },
         transitionMessage: "Taking the stairs to EXEC...",
@@ -227,7 +227,7 @@ const FLOORS = {
       "111111111111111111111111111111111111111",
     ],
 
-    landmarks: [],
+    landmarks: [{ r0: 12, c0: 19, r1: 12, c1: 22, label: "STAIRS" }],
 
     roomLabels: [{ x: 20.5, y: 1.5, text: "CONF: FOUNDATION" }],
 
@@ -253,9 +253,7 @@ const FLOORS = {
     // own desk. This floor is just somewhere else to work and fight.
     stairs: [
       {
-        x: 20,
-        y: 12,
-        label: "STAIRS TO GFS",
+        label: "GFS",
         toFloor: "GFS",
         arriveAt: { x: 34, y: 9 },
         transitionMessage: "Taking the stairs to GFS...",
@@ -282,7 +280,7 @@ const FLOORS = {
       "11111111111111111111111111111111111111111",
     ],
 
-    landmarks: [],
+    landmarks: [{ r0: 5, c0: 19, r1: 6, c1: 22, label: "STAIRS" }],
 
     roomLabels: [
       { x: 5, y: 0.5, text: "COO OFFICE" },
@@ -317,9 +315,7 @@ const FLOORS = {
 
     stairs: [
       {
-        x: 20,
-        y: 6,
-        label: "STAIRS TO GFS",
+        label: "GFS",
         toFloor: "GFS",
         arriveAt: { x: 38, y: 9 },
         transitionMessage: "Taking the stairs to GFS...",
