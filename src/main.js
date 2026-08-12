@@ -26,7 +26,11 @@ const PLAYER_STATE = {
 };
 
 const config = {
-  type: Phaser.AUTO,
+  // Canvas2D, not AUTO/WebGL: nothing here needs WebGL (no shaders/pipelines),
+  // and forcing Canvas avoids the "small broken canvas" icon some machines
+  // show when WebGL context creation fails (locked-down GPU drivers, remote
+  // desktop/VDI, VMs) instead of relying on AUTO's fallback.
+  type: Phaser.CANVAS,
   width: 640,
   height: 480,
   parent: "game-container",
