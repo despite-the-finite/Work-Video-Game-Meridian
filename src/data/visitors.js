@@ -18,10 +18,25 @@ const VISITORS = [
     type: "family",
     portraitColor: 0xc25a8a,
     hairColor: 0xd9c27a,
+    // Multiple full conversations instead of one — handleVisitorInteract
+    // picks a random one each visit so repeat trips to Visitor Day don't
+    // always play back the identical lines.
     dialogue: [
-      "Hey, stranger. I brought you a coffee since I figured you forgot to eat.",
-      "Indra misses you, but she knows you're out here becoming a big deal.",
-      "Don't let them talk you into anything unreasonable today. I mean it, Karsh.",
+      [
+        "Hey, stranger. I brought you a coffee since I figured you forgot to eat.",
+        "Indra misses you, but she knows you're out here becoming a big deal.",
+        "Don't let them talk you into anything unreasonable today. I mean it, Karsh.",
+      ],
+      [
+        "There he is. I was starting to think Reception was lying about you working here.",
+        "Kush says hi, by the way — he's around here somewhere, probably at the taco truck.",
+        "Go easy on yourself today, okay? You don't have to win every meeting.",
+      ],
+      [
+        "I set up a lawn chair by the sandwich cart. Living my best open-house life.",
+        "Indra's been narrating everyone's job titles all morning. She's very confident about it.",
+        "Come find us when you get a break. No rush — we're not going anywhere.",
+      ],
     ],
   },
   {
@@ -30,10 +45,24 @@ const VISITORS = [
     title: "Your Daughter",
     type: "family",
     portraitColor: 0xe6b84a,
+    // Indra is 5, so her lines should read like a five-year-old's, not a
+    // shrunk-down adult's — short, excited, a little tangential.
     dialogue: [
-      "Daddy! I made you a drawing. It's you fighting a big red monster.",
-      "Mommy said it's called 'scope creep.' Is that a real monster?",
-      "Can we get ice cream after work? Please? PLEASE?",
+      [
+        "Daddy! I made you a drawing. It's you fighting a big red monster.",
+        "Mommy said it's called 'scope creep.' Is that a real monster?",
+        "Can we get ice cream after work? Please? PLEASE?",
+      ],
+      [
+        "Daddy, guess what! I saw a real crane outside. It was SO big.",
+        "Uncle Kush let me have two cookies. Don't tell Mommy.",
+        "Do you have your own desk? Can I sit at it? I'll be very quiet.",
+      ],
+      [
+        "I told my whole class you build tanks. Not the army kind, the big round kind!",
+        "My drawing has YOU and a monster and also a dog, even though we don't have a dog.",
+        "Can we get ice cream after work? Please? PLEASE? You said that last time and we didn't!",
+      ],
     ],
   },
   {
@@ -43,9 +72,44 @@ const VISITORS = [
     type: "family",
     portraitColor: 0x6b8a5a,
     dialogue: [
-      "So when do you become the boss? Your father wants to know.",
-      "We're very proud of you, even if we don't fully understand what an EPC is.",
-      "Your mother made extra for dinner. Don't work too late tonight.",
+      [
+        "So when do you become the boss? Your father wants to know.",
+        "We're very proud of you, even if we don't fully understand what an EPC is.",
+        "Your mother made extra for dinner. Don't work too late tonight.",
+      ],
+      [
+        "Your father wants to know if that's a hard hat you're supposed to be wearing right now.",
+        "We ran into Kush by the food trucks. That boy can really put away a taco.",
+        "Your cousin asked what you do again. We told her 'important building things.' Close enough.",
+      ],
+      [
+        "This is a very nice office. Very clean. Your father approves.",
+        "We brought a container of extra food, it's in the car — don't forget it this time.",
+        "We're proud of you. We'll say it as many times as it takes for you to believe it.",
+      ],
+    ],
+  },
+  {
+    id: "brother",
+    name: "Kush",
+    title: "Your Brother",
+    type: "family",
+    // Same blue as the player sprite ("player" texture, 0x4a90d9) so he
+    // visually reads as Karsh's brother rather than a random coworker.
+    // Goofy-nerd energy: puns, over-explaining, way too into it.
+    portraitColor: 0x4a90d9,
+    hairColor: 0x1a1a1a,
+    dialogue: [
+      [
+        "There's my brother, the almost-executive! I calculated your promotion odds. They're good, actuarially speaking.",
+        "I already hit the taco truck twice. Technically that's just sample-size validation.",
+        "Mom keeps asking if you're eating enough. I told her your BMI trendline looks stable. She did not appreciate that answer.",
+      ],
+      [
+        "Nice office. I brought my own graphing calculator in case yours gets confiscated in a meeting.",
+        "Indra told me you fight monsters here. I did not correct her, because frankly, same energy as my D&D campaign.",
+        "Don't work too hard, okay? Or do — I built you a little efficiency spreadsheet. Don't ask why I have it already.",
+      ],
     ],
   },
   {
@@ -182,6 +246,7 @@ const VISITOR_DAY = {
     { visitorId: "wife", x: 9, y: 6 },
     { visitorId: "daughter", x: 14, y: 6 },
     { visitorId: "parents", x: 11, y: 4 },
+    { visitorId: "brother", x: 11, y: 7 },
     { visitorId: "elec_sub", x: 6, y: 9 },
     { visitorId: "concrete_sub", x: 17, y: 9 },
     { visitorId: "client_locke", x: 6, y: 10 },

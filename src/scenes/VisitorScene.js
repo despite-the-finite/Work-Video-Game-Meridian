@@ -23,7 +23,7 @@ class VisitorScene extends Phaser.Scene {
         const py = y * T + T / 2;
 
         if (ch === "1") {
-          this.solids.create(px, py, "tile_wall").setSize(T, T).refreshBody();
+          this.solids.create(px, py, this.wallTextureKey(x, y)).setSize(T, T).refreshBody();
         } else if (ch === "2") {
           this.add.image(px, py, "tile_floor");
           this.solids.create(px, py, "tile_desk").setSize(T, T).refreshBody();
@@ -147,6 +147,17 @@ class VisitorScene extends Phaser.Scene {
     this.dialogue = null;
   }
 
+  // Same orientation-picking as OfficeScene's wallTextureKey — a run of
+  // wall tiles reads as one continuous line instead of a stack of dashes.
+  wallTextureKey(x, y) {
+    const isWall = (gx, gy) => this.grid[gy] !== undefined && this.grid[gy][gx] === "1";
+    const horizontal = isWall(x - 1, y) || isWall(x + 1, y);
+    const vertical = isWall(x, y - 1) || isWall(x, y + 1);
+    if (horizontal && vertical) return "tile_wall_x";
+    if (vertical) return "tile_wall_v";
+    return "tile_wall_h";
+  }
+
   buildHud() {
     this.add
       .rectangle(4, 4, 220, 48, 0x14161c, 0.75)
@@ -264,10 +275,20 @@ class VisitorScene extends Phaser.Scene {
     );
   }
 
+  // Some visitors (family) have several full conversations instead of one
+  // — pick a random one each visit so repeat trips don't replay the same
+  // lines verbatim. Everyone else still just has a flat line list.
+  pickDialogueLines(v) {
+    if (Array.isArray(v.dialogue[0])) {
+      return [...Phaser.Utils.Array.GetRandom(v.dialogue)];
+    }
+    return [...v.dialogue];
+  }
+
   handleVisitorInteract(entry) {
     const v = entry.visitor;
     const p = PLAYER_STATE;
-    const lines = [...v.dialogue];
+    const lines = this.pickDialogueLines(v);
 
     p.hp = p.maxHp;
     p.mp = p.maxMp;
