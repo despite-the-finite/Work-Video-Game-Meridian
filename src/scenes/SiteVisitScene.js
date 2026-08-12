@@ -115,6 +115,28 @@ class SiteVisitScene extends Phaser.Scene {
     });
     this.physics.add.collider(this.player, this.checkpointGroup);
 
+    // The client — walk up and hit SPACE once all three checkpoints are
+    // clear to start the change-order negotiation (handleClientTrailer
+    // below gates on that; before then it's just a "come back later" line).
+    const ct = this.site.clientTrailer;
+    const client = CLIENTS.find((c) => c.id === ct.clientId);
+    const clientPx = ct.interactPoint.x * T + T / 2;
+    const clientPy = ct.interactPoint.y * T + T / 2;
+    this.clientGroup = this.physics.add.staticGroup();
+    const clientSpr = this.clientGroup.create(clientPx, clientPy, `client_${this.siteId}`);
+    clientSpr.setSize(T * 0.6, T * 0.5).refreshBody();
+    this.add
+      .text(clientPx, clientPy - T * 0.9, client ? client.name : "Client", {
+        fontSize: "12px",
+        fontFamily: "Courier New",
+        color: "#ffe9a8",
+        align: "center",
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5);
+    this.physics.add.collider(this.player, this.clientGroup);
+
     // Exit portal
     const exitPos = this.site.exitPortal;
     this.exitSprite = this.add.image(

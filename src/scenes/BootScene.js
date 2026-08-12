@@ -50,6 +50,14 @@ class BootScene extends Phaser.Scene {
           cp.portraitColor || 0x8a6d3b
         );
       });
+      // The client itself — SiteVisitScene renders this at clientTrailer's
+      // interactPoint so there's something to actually walk up to, instead
+      // of an invisible trigger tile.
+      const ct = SITE_VISITS[siteKey].clientTrailer;
+      const client = ct && CLIENTS.find((c) => c.id === ct.clientId);
+      if (client) {
+        this.generateActorTexture(`client_${siteKey}`, T, client.color || 0xb5942e);
+      }
     });
 
     // Visitor Day textures
