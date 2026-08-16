@@ -10,15 +10,20 @@ site visits across five industries, and negotiate change orders with clients.
 
 ## Running it
 
-No install, no build tool. Just open `index.html` in a browser — Phaser
-loads from a CDN and everything else is plain JS.
+No install, no build tool, no network. Phaser is vendored in `src/vendor/`
+and everything else is plain JS, so opening `index.html` in a browser is
+the whole setup — offline included.
 
 ```
-epc-quest/index.html
+index.html
 ```
 
 (If you're on a system with `python3`, `npx serve`, or similar, serving the
 folder over `http://localhost` works too, but isn't required.)
+
+The game is drawn at a fixed 640x480 internally and scaled up to fill the
+browser window, keeping its 4:3 aspect — so it fills a desktop monitor and
+a phone screen alike rather than sitting in a small box.
 
 **Controls:** Hit any key at the title screen to start. Arrow keys / WASD to
 move, `SPACE` to talk/interact/fight and to confirm menu choices, `H` to warp
@@ -63,7 +68,11 @@ screen.
   the client rep, a rival Engineering Manager from CDB, and the EXEC-floor
   big wigs) trigger a fight when their dialogue ends instead. Corporate-satire
   enemies: Scope Creep, Reply-All Storm, Deadline Wraith, Redline Barrage,
-  Schedule Slip, and more.
+  Schedule Slip, and more. Every fight runs off the same six-slot menu —
+  Attack, Overtime Push (5 MP), Special Attack (8 MP), Guard, Dodge, Flee.
+  Guard reliably halves the next hit; Dodge is a coin flip to avoid it
+  entirely. Client negotiations reskin those same six slots with
+  change-order language rather than adding a separate system.
 - **Promotion ladder** — leveling up advances your actual job title:
   Engineering Manager → Senior Engineering Manager → Director of
   Engineering → VP of Engineering → **Executive**. Every level up (however
@@ -79,6 +88,9 @@ screen.
   at 100 rolls over and queues a level up, same as XP overflow — but neither
   path applies until you get a change order approved on a site visit, so
   leveling needs progress in the office *and* on-site, not either alone.
+  It cuts the other way too: losing a fight costs you Bonus Potential and
+  offers Retry or Exit, and letting it bottom out at 0 is Game Over — your
+  reputation is gone, and the run restarts.
 - **Site visits** — six construction-site maps reached from your cubicle,
   spanning multiple industries: a processing facility, a food manufacturing
   plant, a T&D line rebuild, an oil & gas refinery turnaround, a bridge
@@ -96,13 +108,19 @@ screen.
   (Vendor —, Subcontractor —, Client —) so they're easy to tell apart.
 - **PTO** — take time off with Colleen and Indra from your cubicle. Fully
   restores HP/MP, at the cost of some Bonus Potential.
+- **Sound** — synthesized live with the Web Audio API, no audio files. The
+  title and intro play a short boom-bap beat, and each mode then gets its
+  own ambient bed: mouse clicks, keyboard clatter and phone rings in the
+  office; an excavator drone and truck backup beeps on site; elevator muzak
+  on Visitor Day; surf and gulls on PTO.
 
 ## Project structure
 
 ```
-index.html                  Entry point — loads Phaser (CDN) + all scripts in order
+index.html                  Entry point — boot/progress screen, then loads every script in order
 src/
-  audio.js                   Procedurally synthesized title/intro beat (Web Audio API)
+  vendor/phaser.min.js       Phaser 3.80.1, vendored so the game runs offline
+  audio.js                   Title/intro beat + per-mode ambient sound (Web Audio API)
   touch.js                   On-screen phone/tablet controls — synthesizes the
                              same key events the scenes already listen for
   data/                      Plain-data config, no logic
@@ -125,7 +143,7 @@ src/
     SiteVisitScene.js           Site visit maps
     VisitorScene.js             Visitor Day lobby
     BattleScene.js              Shared turn-based battle engine (encounters, bosses, negotiations)
-  main.js                       Phaser game config + global PLAYER_STATE
+  main.js                       Phaser game config (640x480, scaled to fit the window) + global PLAYER_STATE
 ```
 
 All art is generated procedurally at boot (`BootScene.js`) via Phaser's
@@ -142,6 +160,7 @@ walls reads as one continuous line instead of a stack of dashes.
 
 Actively evolving. Current focus has been core systems (movement, battles,
 promotion ladder, six site visits across five industries, Visitor Day, PTO,
-a three-floor office, and a cubicle hub for mode selection) over content
-volume — more coworkers, site visits, and story beats are easy to add since
-everything is data-driven off the files in `src/data/`.
+a three-floor office, a cubicle hub for mode selection, and a presentation
+layer that scales to desktop and touch alike) over content volume — more
+coworkers, site visits, and story beats are easy to add since everything is
+data-driven off the files in `src/data/`.
