@@ -27,6 +27,14 @@ battle menus and the cubicle's mode-select menu. The title and intro screens
 play a small procedurally-synthesized beat; the intro also shows the full
 controls legend.
 
+**On a phone or tablet:** open the same page and on-screen controls appear —
+a thumb pad plus `SPACE` and `H` buttons. The pad reads direction from where
+your thumb sits, so you can slide between directions without lifting and hold
+a corner to walk diagonally. In portrait the game sits above the controls; in
+landscape they tuck into the letterbox bands beside the canvas. They stay
+hidden on desktop, and on a touchscreen laptop until you actually touch the
+screen.
+
 ## What's in the game
 
 - **Title & intro** — a title card over a procedurally drawn construction
@@ -95,6 +103,8 @@ controls legend.
 index.html                  Entry point — loads Phaser (CDN) + all scripts in order
 src/
   audio.js                   Procedurally synthesized title/intro beat (Web Audio API)
+  touch.js                   On-screen phone/tablet controls — synthesizes the
+                             same key events the scenes already listen for
   data/                      Plain-data config, no logic
     ranks.js                 Promotion ladder thresholds/titles + shared level-up growth
     bonus.js                 Bonus Potential scoring + labels
