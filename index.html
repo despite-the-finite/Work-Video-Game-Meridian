@@ -9,14 +9,23 @@
     padding: 0;
     background: #14161c;
     height: 100%;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Courier New', monospace;
   }
+  /* Fills the window — Phaser's Scale Manager (see main.js) fits the 640x480
+     canvas inside it, centered, so the game scales up to whatever room the
+     browser gives it instead of sitting at a fixed 640x480. */
   #game-container {
-    box-shadow: 0 0 0 4px #2a2d3a, 0 0 40px rgba(0,0,0,0.6);
+    width: 100vw;
+    height: 100vh;
     cursor: none;
+  }
+  /* Frame the canvas itself rather than the (now full-window) container. */
+  #game-container canvas {
+    box-shadow: 0 0 0 4px #2a2d3a, 0 0 40px rgba(0,0,0,0.6);
   }
   #boot-status {
     position: fixed;
